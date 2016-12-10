@@ -23,7 +23,9 @@ function CollisionSystem:process(e, dt)
 	local pos = e.pos
 	local col = e.collider
 
-	-- e.collider:draw()
+	if reg.DEBUG_COLLISIONS then
+		e.collider:draw()
+	end
 
 	-- update rotation
 	col:setRotation(e.angle)
@@ -32,13 +34,13 @@ function CollisionSystem:process(e, dt)
 	col:moveTo(pos.x, pos.y)
 
 	-- default not grounded so object will fall
-	if col.parent.platformer then
+	if e.platformer then
 		hasCollidedSolidBottom = false
 		-- col.parent.platformer.grounded = false
+		e.platformer.isTouchingWall = false
 	end
 
 	adjustedY = false
-	e.platformer.isTouchingWall = false
 
 	-- check collisions
 	for col2, delta in pairs(HC:collisions(col)) do

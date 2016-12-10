@@ -1,14 +1,16 @@
 local GameObject = require "src.entities.GameObject"
 local ParticleSystem = require "src.entities.ParticleSystem"
+local AttackBox = require "src.entities.AttackBox"
 
 local Player = GameObject:extend()
 local assets =  require "src.assets"
 
-function Player:new(x, y)
-	Player.super.new(self, 100,100)
+function Player:new(x, y, playerNumber)
+	Player.super.new(self, x or 100, y or 100, playerNumber)
 	-- Player.super.new(self, x or push:getWidth()/2, y or push:getHeight()/2)
 	self.name = "Player"
 	self.isPlayer = true
+	self.playerNumber = playerNumber
 
 	-- sprite component
 	self.sprite = assets.player
@@ -22,19 +24,19 @@ function Player:new(x, y)
 	self.movable = {
 		velocity = { x = 0, y = 0 },
 		acceleration = { x = 0, y = 0 },
-		drag = { x = 2500, y = reg.GRAVITY },
-		maxVelocity = { x = 200, y = 320 },
-		speed = { x = 3000, y = 0 } -- used to assign to acceleration
+		drag = { x = 3200, y = reg.GRAVITY },
+		maxVelocity = { x = 250, y = 400 },
+		speed = { x = 4500, y = 0 } -- used to assign to acceleration
 	}
 
 	self.platformer = {
 		grounded = false,
-		jumpForce = -300,
+		jumpForce = -450,
 		isTouchingWall = false
 	}
 
 	-- collider
-	self.collider = HC:rectangle(self.pos.x, self.pos.y, reg.T_SIZE, reg.T_SIZE)
+	self.collider = HC:rectangle(self.pos.x, self.pos.y, reg.T_SIZE - 5, reg.T_SIZE)
 	self.collider['parent'] = self
 
 	-- self:setupParticles()
@@ -50,6 +52,8 @@ function Player:update(dt)
 	-- log.trace(self.movable.velocity.y .. " " .. tostring(self.platformer.grounded))
 	self:moveControls()
 
+	self:updateAnimations()
+
 	if self.trailPs then
 		self.trailPs.ps:setPosition(self.pos.x + math.random(-2,2), self.pos.y + 10)
 		self.trailPs.ps:emit(1)
@@ -57,6 +61,14 @@ function Player:update(dt)
 end
 
 function Player:draw()
+end
+
+function Player:updateAnimations()
+	if self.movable.acceleration.x < 0 then
+		self.flippedH = false
+	elseif self.movable.acceleration.x > 0 then
+		self.flippedH = true
+	end
 end
 
 function Player:setupParticles()
@@ -77,9 +89,9 @@ function Player:setupParticles()
 end
 
 function Player:moveControls()
-	local left = love.keyboard.isDown('left')
-	local right = love.keyboard.isDown('right')
-	local jump = love.keyboard.isDown('z')
+	local left = self:keyIsDown('left')
+	local right = self:keyIsDown('right')
+	local jump = self:keyIsDown('jump')
 
 	local applySpeedX = self.movable.speed.x
 
@@ -109,6 +121,18 @@ function Player:moveControls()
 end
 
 function Player:onCollision(other, delta)
+	if other and other.name == "AttackBox" and other.playerOwner ~= self.playerNumber then
+		self:die()
+	end
+end
+
+function Player:die()
+	if self.isAlive then
+		print('die')
+		self.isAlive = false
+		screen:setShake(10)
+		self.toRemove = true
+	end
 end
 
 function Player:jump()
@@ -118,13 +142,35 @@ function Player:jump()
 		self:applyJumpForce()
 	end
 
-
-	local left = love.keyboard.isDown('left')
-	local right = love.keyboard.isDown('right')
+	local left = love.keyboard.isDown(reg.controls[self.playerNumber].left)
+	local right = love.keyboard.isDown(reg.controls[self.playerNumber].right)
 
 	if self.platformer.isTouchingWall and (left or right) then
 		self:wallJump()
 	end
+end
+
+function Player:attack()
+	atkPos = {x = self.pos.x, y = self.pos.y}
+
+	-- atkDistance = 20
+	atkDirection = nil
+
+	if self:keyIsDown('down') then
+		atkDirection = 'down'
+		-- atkPos.y = atkPos.y + atkDistance
+	elseif self:keyIsDown('up') then
+		atkDirection = 'up'
+		-- atkPos.y = atkPos.y - atkDistance
+	elseif self.flippedH then
+		atkDirection = 'right'
+		-- atkPos.x = atkPos.x + atkDistance
+	else	
+		atkDirection = 'left'
+		-- atkPos.x = atkPos.x - atkDistance
+	end
+
+	world:addEntity(AttackBox(atkPos.x, atkPos.y, self.playerNumber, atkDirection, self.pos))
 end
 
 function Player:applyJumpForce()
@@ -133,8 +179,8 @@ function Player:applyJumpForce()
 end
 
 function Player:wallJump()
-	local left = love.keyboard.isDown('left')
-	local right = love.keyboard.isDown('right')
+	local left = self:keyIsDown('left')
+	local right = self:keyIsDown('right')
 
 	local wallJumpXForce = 20000
 
@@ -148,6 +194,11 @@ function Player:wallJump()
 
 	self:applyJumpForce()
 	log.trace("walljump")
+end
+
+-- key = up down left right jump attack
+function Player:keyIsDown(key)
+	return love.keyboard.isDown(reg.controls[self.playerNumber][key])
 end
 
 return Player
