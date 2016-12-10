@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Get game name
+echo "Enter game title (default is \"Game\"):"
+read filename
+
+if [ -z $filename ]
+	then
+		filename="Game"
+fi
+
+# Create .love file
+zip -r ./build/$filename.love . -x .\* -x \*.app\* -x \*.love\* \*build\*
+
+# Copy love executables
+ditto ~/.love/love.app ./build/$filename.app
+ditto ~/.love/windows ./build/$filename
+
+# Create win app
+cat ./build/$filename/love.exe ./build/$filename.love > ./build/$filename/$filename.exe
+
+# Create mac app
+cp ./build/$filename.love ./build/$filename.app/Contents/Resources/
+subl ./build/$filename.app/Contents/Info.plist
+
+echo "Compress files into zips? (y|N)"
+read input
+
+case "$input" in
+	y|Y )
+		ditto -ck --rsrc --sequesterRsrc --keepParent ./build/$filename.app ./build/$filename-mac.zip
+		ditto -ck --rsrc --sequesterRsrc --keepParent ./build/$filename ./build/$filename-win.zip
+		;;
+	n|N ) echo 'no';;
+esac
