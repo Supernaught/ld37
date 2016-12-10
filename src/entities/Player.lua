@@ -15,9 +15,9 @@ function Player:new(x, y, playerNumber)
 	-- sprite component
 	self.sprite = assets.player
 	self.flippedH = false
-	self.offset = { x = reg.T_SIZE/2, y = reg.T_SIZE/2 }
-	local g = anim8.newGrid(reg.T_SIZE, reg.T_SIZE, self.sprite:getWidth(), self.sprite:getHeight())
-	self.idleAnimation = anim8.newAnimation(g('1-3',1), 0.1)
+	self.offset = { x = 25/2, y = 25/2 }
+	local g = anim8.newGrid(25, 25, self.sprite:getWidth(), self.sprite:getHeight())
+	self.idleAnimation = anim8.newAnimation(g('1-8',1), 0.07)
 	self.animation = self.idleAnimation
 
 	-- movable component
@@ -165,7 +165,7 @@ function Player:attack()
 	elseif self.flippedH then
 		atkDirection = 'right'
 		-- atkPos.x = atkPos.x + atkDistance
-	else	
+	else
 		atkDirection = 'left'
 		-- atkPos.x = atkPos.x - atkDistance
 	end
