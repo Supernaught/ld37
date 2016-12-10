@@ -5,17 +5,21 @@ local AttackBox = require "src.entities.AttackBox"
 local Player = GameObject:extend()
 local assets =  require "src.assets"
 
-function Player:new(x, y, playerNumber)
-	Player.super.new(self, x or 100, y or 100, playerNumber)
+local lume = require "lib.lume"
+
+function Player:new(x, y, playerNumber, isUsingGamepad)
+	local offset = { x = 25/2, y = 25/2 }
+	Player.super.new(self, (x + offset.x) or 100, (y + offset.y) or 100, playerNumber)
 	-- Player.super.new(self, x or push:getWidth()/2, y or push:getHeight()/2)
 	self.name = "Player"
 	self.isPlayer = true
 	self.playerNumber = playerNumber
+	self.isUsingGamepad = isUsingGamepad or false
 
 	-- sprite component
 	self.sprite = assets.player
+	self.offset = offset
 	self.flippedH = false
-	self.offset = { x = 25/2, y = 25/2 }
 	local g = anim8.newGrid(25, 25, self.sprite:getWidth(), self.sprite:getHeight())
 	self.idleAnimation = anim8.newAnimation(g('1-8',1), 0.07)
 	self.animation = self.idleAnimation
@@ -154,17 +158,17 @@ function Player:moveControls()
 end
 
 function Player:onCollision(other, delta)
-	if other and other.name == "AttackBox" and other.playerOwner ~= self.playerNumber then
+	if other and other.name == "AttackBox" and other.isAlive and other.playerOwner ~= self.playerNumber then
 		self:die()
 	end
 end
 
 function Player:die()
 	if self.isAlive then
-		print('die')
 		self.isAlive = false
 		screen:setShake(10)
 		self.toRemove = true
+		timer.after(0.5, function() playstate.respawnPlayer(self.playerNumber) end)
 	end
 end
 
@@ -175,25 +179,50 @@ function Player:jump()
 		self:applyJumpForce()
 	end
 
-	local left = love.keyboard.isDown(reg.controls[self.playerNumber].left)
-	local right = love.keyboard.isDown(reg.controls[self.playerNumber].right)
+	local left = self:keyIsDown('left')
+	local right = self:keyIsDown('right')
 
 	if self.platformer.isTouchingWall and (left or right) then
-		self:wallJump()
+		self:wallJump(left, right)
 	end
 end
 
 function Player:attack()
 	atkDirection = nil
+	local threshold = 0.3
 
-	if self:keyIsDown('down') then
-		atkDirection = 'down'
-	elseif self:keyIsDown('up') then
-		atkDirection = 'up'
-	elseif self.flippedH then
-		atkDirection = 'left'
-	else
-		atkDirection = 'right'
+	if self.isUsingGamepad then
+		if math.abs(self.gamepadAxis.x) > threshold or math.abs(self.gamepadAxis.y) > threshold then
+			if math.abs(self.gamepadAxis.x) > math.abs(self.gamepadAxis.y) then
+				if self.gamepadAxis.x < 0 then
+					atkDirection = 'left'
+				else
+					atkDirection = 'right'
+				end
+			else
+				if self.gamepadAxis.y < 0 then
+					atkDirection = 'up'
+				else
+					atkDirection = 'down'
+				end
+			end
+		else -- if not beyond threshold
+			if self.flippedH then
+				atkDirection = 'left'
+			else
+				atkDirection = 'right'
+			end
+		end
+	else -- if not gamepad
+		if self:keyIsDown('down') then
+			atkDirection = 'down'
+		elseif self:keyIsDown('up') then
+			atkDirection = 'up'
+		elseif self.flippedH then
+			atkDirection = 'left'
+		else
+			atkDirection = 'right'
+		end
 	end
 
 	world:addEntity(AttackBox(self.pos.x, self.pos.y, self.playerNumber, atkDirection, self.pos))
@@ -204,11 +233,8 @@ function Player:applyJumpForce()
 	self.movable.velocity.y = self.platformer.jumpForce
 end
 
-function Player:wallJump()
-	local left = self:keyIsDown('left')
-	local right = self:keyIsDown('right')
-
-	local wallJumpXForce = 20000
+function Player:wallJump(left, right)
+	local wallJumpXForce = 2000
 
 	self.movable.velocity.x = 0
 
@@ -226,5 +252,13 @@ end
 function Player:keyIsDown(key)
 	return love.keyboard.isDown(reg.controls[self.playerNumber][key]) or self.gamepadAxis[key]
 end
+
+-- function Player:respawn()
+-- 	local respawnPoint = lume.randomchoice(respawnAreas)
+-- 	self.pos.x = respawnPoint.x + self.offset.x
+-- 	self.pos.y = respawnPoint.y + self.offset.y
+
+-- 	self.isAlive = true
+-- end
 
 return Player

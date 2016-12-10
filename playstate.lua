@@ -6,6 +6,7 @@ playstate = {}
 local HClib = require "lib.hc"
 local Camera = require "lib.hump.camera"
 local sti = require "lib.sti"
+local lume = require "lib.lume"
 
 -- entities
 local Player = require "src.entities.Player"
@@ -15,7 +16,8 @@ local Enemy = require "src.entities.Enemy"
 local player, player2
 local uiScore
 local score = 0
-local respawnAreas = {}
+
+respawnAreas = {}
 
 HC = nil
 
@@ -24,11 +26,20 @@ function playstate:init()
 
 	map = sti("maps/test_24.lua")
 
+	-- get respawn areas
+	for k, respawnPoint in pairs(map.layers['respawns'].objects) do
+		table.insert(respawnAreas, {x = respawnPoint.x, y = respawnPoint.y})
+	end
+
 	self.world = tiny.world()
 	world = self.world
 
-	player = Player(nil, nil, 1)
-	player2 = Player(200, nil, 2)
+	-- spawn players
+	local respawnPoint = lume.randomchoice(respawnAreas)
+	local respawnPoint2 = lume.randomchoice(respawnAreas)
+
+	player = Player(respawnPoint.x, respawnPoint.y, 1)
+	player2 = Player(respawnPoint2.x, respawnPoint2.y, 2, true)
 
 	camera = Camera(0, 0, 1)
 
@@ -55,13 +66,6 @@ function playstate:init()
 	)
 
 	colliders = {}
-
-	for k, respawnPoint in pairs(map.layers['respawns'].objects) do
-		table.insert(respawnAreas, {x = respawnPoint.x, y = respawnPoint.y})
-		-- for i, obj in pairs(layer.objects) do
-		-- 	print(i)
-		-- end
-	end
 
 	-- for k, layer in pairs(map.layers) do
 	-- 	log.trace(k .. "---" .. layer.name)
@@ -154,6 +158,20 @@ function playstate:gamepadreleased(j, button)
 	elseif button == 'x' then
 		player2.gamepadAxis.attack = false
 	end
+end
+
+function playstate.respawnPlayer(playerNum)
+	print(playerNum)
+	local respawnPoint = lume.randomchoice(respawnAreas)
+
+	if playerNum == 1 then
+		player = Player(respawnPoint.x, respawnPoint.y, 1)
+		playstate.world:add(player)
+	else
+		player2 = Player(respawnPoint.x, respawnPoint.y, 2, true)
+		playstate.world:add(player2)
+	end
+
 end
 
 return playstate

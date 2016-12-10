@@ -99,7 +99,7 @@ function CollisionSystem:process(e, dt)
 end
 
 function CollisionSystem:onAdd(e)
-	print(e.name .. " added to col")
+	-- print(e.name .. " added to col")
 end
 
 function CollisionSystem:onRemove(e)
