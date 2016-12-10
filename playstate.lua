@@ -15,6 +15,7 @@ local Enemy = require "src.entities.Enemy"
 local player, player2
 local uiScore
 local score = 0
+local respawnAreas = {}
 
 HC = nil
 
@@ -37,7 +38,7 @@ function playstate:init()
 	enemy.moveTargetSpeed = 20
 
 	self.world:add(
-		require("src.systems.BGColorSystem")(20,0,0),
+		require("src.systems.BGColorSystem")(200,220,250),
 		require("src.systems.UpdateSystem")(),
 		require("src.systems.DrawSystem")(),
 		require("src.systems.MoveTowardsTargetSystem")(),
@@ -55,9 +56,8 @@ function playstate:init()
 
 	colliders = {}
 
-	for k, object in pairs(map.layers['collisions'].objects) do
-		-- print(object.x)
-		-- print(object.y)
+	for k, respawnPoint in pairs(map.layers['respawns'].objects) do
+		table.insert(respawnAreas, {x = respawnPoint.x, y = respawnPoint.y})
 		-- for i, obj in pairs(layer.objects) do
 		-- 	print(i)
 		-- end
@@ -130,11 +130,30 @@ function playstate:draw()
 	love.graphics.print(player.movable.velocity.x, 20, 80)
 end
 
-function playstate:gamepadaxis(j, a)
-	print(a)
+function playstate:joystickaxis(j, axis, value)
+	if axis == 1 then
+		player2.gamepadAxis.x = value
+	elseif axis == 2 then
+		player2.gamepadAxis.y = value
+	end
 end
 
-function playstate:gamepadpressed(j, b)
-	print(b)
+function playstate:gamepadpressed(j, button)
+	if button == 'a' then
+		player2.gamepadAxis.jump = true
+		player2:jump()
+	elseif button == 'x' then
+		player2.gamepadAxis.attack = true
+		player2:attack()
+	end
 end
+
+function playstate:gamepadreleased(j, button)
+	if button == 'a' then
+		player2.gamepadAxis.jump = false
+	elseif button == 'x' then
+		player2.gamepadAxis.attack = false
+	end
+end
+
 return playstate

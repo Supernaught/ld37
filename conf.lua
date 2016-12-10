@@ -12,9 +12,6 @@ function love.conf(t)
 	t.window.width = tileSize * tileWidth * pixelScale
 	t.window.height = tileSize * tileHeight * pixelScale
 
-	print(t.window.width)
-	print(t.window.height)
-
 	-- t.window.fullscreen = true
 	-- t.window.fullscreentype = "exclusive"
 end

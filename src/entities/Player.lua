@@ -29,6 +29,7 @@ function Player:new(x, y, playerNumber)
 		speed = { x = 4500, y = 0 } -- used to assign to acceleration
 	}
 
+	-- platformer
 	self.platformer = {
 		grounded = false,
 		jumpForce = -450,
@@ -41,6 +42,18 @@ function Player:new(x, y, playerNumber)
 
 	-- self:setupParticles()
 	self:setDrawLayer("player")
+
+	-- gamepad
+	self.gamepadAxis = {
+		x = 0,
+		y = 0,
+		left = false,
+		right = false,
+		up = false,
+		right = false,
+		jump = false,
+		attack = false
+	}
 
 	return self
 end
@@ -64,9 +77,9 @@ function Player:draw()
 end
 
 function Player:updateAnimations()
-	if self.movable.acceleration.x < 0 then
+	if self.movable.acceleration.x > 0 then
 		self.flippedH = false
-	elseif self.movable.acceleration.x > 0 then
+	elseif self.movable.acceleration.x < 0 then
 		self.flippedH = true
 	end
 end
@@ -99,6 +112,7 @@ function Player:moveControls()
 	-- 	applySpeedX = applySpeedX / 3
 	-- end
 
+	-- walk movement
 	if left and not right then
 		self.movable.acceleration.x = -applySpeedX
 	elseif right and not left then
@@ -108,6 +122,7 @@ function Player:moveControls()
 		self.movable.acceleration.x = 0
 	end
 
+	-- wall jumps
 	if self.platformer.isTouchingWall then
 		if self.movable.velocity.y < 0 then
 			self.movable.velocity.y = self.movable.velocity.y/1.1
@@ -117,6 +132,24 @@ function Player:moveControls()
 		self.movable.drag.y = reg.GRAVITY/2
 	else
 		self.movable.drag.y = reg.GRAVITY
+	end
+
+	-- gamepad walk
+	local threshold = 0.2
+	-- log.trace(self.gamepadAxis.x .. " " .. self.gamepadAxis.y)
+	self.gamepadAxis.right = false
+	self.gamepadAxis.left = false
+	self.gamepadAxis.down = false
+	self.gamepadAxis.up = false
+
+	if self.gamepadAxis.x > threshold then
+		self.gamepadAxis.right = true
+	elseif self.gamepadAxis.x < -threshold then
+		self.gamepadAxis.left = true
+	elseif self.gamepadAxis.y > threshold then
+		self.gamepadAxis.down = true
+	elseif self.gamepadAxis.y < -threshold then
+		self.gamepadAxis.up = true
 	end
 end
 
@@ -151,26 +184,19 @@ function Player:jump()
 end
 
 function Player:attack()
-	atkPos = {x = self.pos.x, y = self.pos.y}
-
-	-- atkDistance = 20
 	atkDirection = nil
 
 	if self:keyIsDown('down') then
 		atkDirection = 'down'
-		-- atkPos.y = atkPos.y + atkDistance
 	elseif self:keyIsDown('up') then
 		atkDirection = 'up'
-		-- atkPos.y = atkPos.y - atkDistance
 	elseif self.flippedH then
-		atkDirection = 'right'
-		-- atkPos.x = atkPos.x + atkDistance
-	else
 		atkDirection = 'left'
-		-- atkPos.x = atkPos.x - atkDistance
+	else
+		atkDirection = 'right'
 	end
 
-	world:addEntity(AttackBox(atkPos.x, atkPos.y, self.playerNumber, atkDirection, self.pos))
+	world:addEntity(AttackBox(self.pos.x, self.pos.y, self.playerNumber, atkDirection, self.pos))
 end
 
 function Player:applyJumpForce()
@@ -198,7 +224,7 @@ end
 
 -- key = up down left right jump attack
 function Player:keyIsDown(key)
-	return love.keyboard.isDown(reg.controls[self.playerNumber][key])
+	return love.keyboard.isDown(reg.controls[self.playerNumber][key]) or self.gamepadAxis[key]
 end
 
 return Player

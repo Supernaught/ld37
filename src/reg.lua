@@ -27,4 +27,9 @@ reg.controls[2] = {
 	attack = 'p',
 }
 
+reg.gamepad = {
+	a = 'jump',
+	x = 'attack'
+}
+
 return reg

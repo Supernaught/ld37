@@ -5,20 +5,24 @@ local AttackBox = GameObject:extend()
 local assets =  require "src.assets"
 
 function AttackBox:new(x, y, playerOwner, direction, posFollow)
-	boxSize = {x = reg.T_SIZE, y = reg.T_SIZE }
+	boxLength = reg.T_SIZE * 2
+	boxWidth = reg.T_SIZE
+
+	boxSize = {w = boxLength, h = boxWidth}
+
 	atkDistance = reg.T_SIZE * 2
 
 	if direction == 'down' then
 		y = y + atkDistance
-		boxSize.y = boxSize.y * 2
+		boxSize.w = boxWidth
+		boxSize.h = boxLength
 	elseif direction == 'up' then
 		y = y - atkDistance
-		boxSize.y = boxSize.y * 2
+		boxSize.w = boxWidth
+		boxSize.h = boxLength
 	elseif direction == 'right' then
-		boxSize.x = boxSize.x * 2
 		x = x + atkDistance
 	else
-		boxSize.x = boxSize.x * 2
 		x = x - atkDistance
 	end
 
@@ -39,9 +43,9 @@ function AttackBox:new(x, y, playerOwner, direction, posFollow)
 	-- self.animation = self.idleAnimation
 
 
-	self.offset = { x = boxSize.x/2, y = boxSize.y/2 }
+	self.offset = { x = boxSize.w/2, y = boxSize.h/2 }
 	-- collider
-	self.collider = HC:rectangle(self.pos.x, self.pos.y, boxSize.x, boxSize.y)
+	self.collider = HC:rectangle(self.pos.x, self.pos.y, boxSize.w, boxSize.h)
 	self.collider:moveTo(self.pos.x, self.pos.y)
 	self.collider.parent = self
 
@@ -64,7 +68,7 @@ end
 
 function AttackBox:draw()
 	self.collider:draw()
-	love.graphics.rectangle("fill", self.pos.x - self.offset.x, self.pos.y - self.offset.y, boxSize.x, boxSize.y)
+	love.graphics.rectangle("fill", self.pos.x - self.offset.x, self.pos.y - self.offset.y, boxSize.w, boxSize.h)
 end
 
 function AttackBox:onCollision(other, delta)
