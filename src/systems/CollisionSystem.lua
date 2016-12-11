@@ -53,6 +53,11 @@ function CollisionSystem:process(e, dt)
 
 				col.parent.pos.x = col.parent.pos.x + delta.x
 
+				-- bounce if dead
+				if not col.parent.isAlive then
+					col.parent:bounce(delta.x, delta.y)
+				end
+
 				if not adjustedY and not col.parent.platformer.grounded then
 					col.parent.pos.y = col.parent.pos.y + delta.y
 					-- col.parent.movable.velocity.y = col.parent.movable.velocity.y + delta.y

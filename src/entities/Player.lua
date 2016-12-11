@@ -1,5 +1,7 @@
 local GameObject = require "src.entities.GameObject"
-local ParticleSystem = require "src.entities.ParticleSystem"
+local ParticlesTrail = require "src.entities.particles.ParticlesTrail"
+local ParticlesPlayerDie = require "src.entities.particles.ParticlesPlayerDie"
+local ParticlesJump = require "src.entities.particles.ParticlesJump"
 local AttackBox = require "src.entities.AttackBox"
 
 local Player = GameObject:extend()
@@ -30,6 +32,15 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 	self.fallAnimation = anim8.newAnimation(g('5-8',3), 0.08)
 	self.animation = self.fallAnimation
 
+	self:setupParticles()
+	self:setDrawLayer("player")
+
+	self:init()
+
+	return self
+end
+
+function Player:init()
 	-- movable component
 	self.movable = {
 		velocity = { x = 0, y = 0 },
@@ -60,12 +71,8 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 	self.collider = HC:rectangle(self.pos.x, self.pos.y, reg.T_SIZE - 5, reg.T_SIZE)
 	self.collider['parent'] = self
 
-	-- self:setupParticles()
-	self:setDrawLayer("player")
-
 	-- combat
 	self.isAttackPaused = false
-
 	-- gamepad
 	self.gamepadAxis = {
 		x = 0,
@@ -81,8 +88,6 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 		attack = false,
 		roll = false
 	}
-
-	return self
 end
 
 function Player:update(dt)
@@ -94,9 +99,9 @@ function Player:update(dt)
 
 	self:updateAnimations()
 
-	if self.trailPs then
-		self.trailPs.ps:setPosition(self.pos.x + math.random(-2,2), self.pos.y + 10)
-		self.trailPs.ps:emit(1)
+	if self.trailPs and self.platformer.isRolling then
+		self.trailPs.ps:setPosition(self.pos.x + math.random(-2,2), self.pos.y + 5)
+		self.trailPs.ps:emit(2)
 	end
 end
 
@@ -126,20 +131,10 @@ function Player:updateAnimations()
 end
 
 function Player:setupParticles()
-	self.trailPs = ParticleSystem()
-	self.trailPs:setDrawLayer("playerParticles")
-	self.trailPs.ps:setPosition(push:getWidth()/2, push:getHeight()/2)
-	self.trailPs.ps:setParticleLifetime(0.2, 2)
-	self.trailPs.ps:setDirection(1.5*3.14)
-	self.trailPs.ps:setSpread(3.14/3)
-	self.trailPs.ps:setLinearAcceleration(0, 400)
-	self.trailPs.ps:setLinearDamping(50)
-	self.trailPs.ps:setSpin(0, 30)
-	self.trailPs.ps:setColors(82, 127, 57, 255)
-	self.trailPs.ps:setRotation(0, 2*3.14)
-	self.trailPs.ps:setInsertMode('random')
-	self.trailPs.ps:setSizes(0.4, 0)
+	self.trailPs = ParticlesTrail()
+	self.jumpPs = ParticlesJump()
 	world:add(self.trailPs)
+	world:add(self.jumpPs)
 end
 
 function Player:moveControls()
@@ -154,9 +149,9 @@ function Player:moveControls()
 	-- end
 
 	-- walk movement
-	if left and not right then
+	if left and not right and self.isAlive then
 		self.movable.acceleration.x = -applySpeedX
-	elseif right and not left then
+	elseif right and not left and self.isAlive then
 		self.movable.acceleration.x = applySpeedX
 	else
 		self.platformer.isTouchingWall = false
@@ -218,18 +213,35 @@ end
 function Player:onCollision(other, delta)
 	if other and other.name == "AttackBox" and other.isAlive and other.playerOwner.playerNumber ~= self.playerNumber then
 		if self.isAlive then
-			self:die()
+			self:die(other.pos.x)
 			playstate:playerScored(other.playerOwner.playerNumber)
 			-- other.playerOwner.score = other.playerOwner.score + 1
 		end
 	end
 end
 
-function Player:die()
+function Player:die(attackBoxX)
 	self.isAlive = false
 	screen:setShake(10)
-	self.toRemove = true
-	timer.after(0.5, function() playstate.respawnPlayer(self.playerNumber) end)
+
+	local dir = 1
+
+	if attackBoxX > self.pos.x then
+		dir = -1
+	end
+
+	self.movable.maxVelocity.x = self.movable.maxVelocity.x * 2 * dir
+	self.movable.velocity.x = self.movable.maxVelocity.x
+	self:applyJumpForce()
+
+	self.movable.drag.x = 500
+
+	-- self.toRemove = true
+	timer.after(1, function() playstate.respawnPlayer(self.playerNumber) end)
+
+	-- particles
+	local psDie = ParticlesPlayerDie(self.pos.x, self.pos.y)
+	world:add(psDie)
 end
 
 function Player:roll()
@@ -291,6 +303,10 @@ function Player:stopRoll()
 end
 
 function Player:jump()
+	if not self.isAlive then
+		return
+	end
+
 	if not self.platformer.grounded then
 		if self.platformer.canDoubleJump then
 			log.trace("double jump")
@@ -307,6 +323,10 @@ function Player:jump()
 	if self.platformer.isTouchingWall and (left or right) then
 		self:wallJump(left, right)
 	end
+
+	-- particles
+	self.jumpPs.ps:setPosition(self.pos.x, self.pos.y + 5)
+	self.jumpPs.ps:emit(10)
 end
 
 function Player:attack()
@@ -357,7 +377,7 @@ function Player:attack()
 	-- pause movement a bit
 	self.movable.acceleration.x = 0
 	self.movable.velocity.x = self.movable.velocity.x/2
-	self.movable.velocity.y = 0
+	self.movable.velocity.y = self.movable.velocity.y/10
 	self:slowDownSpeed(30, 0.25)
 
 	world:addEntity(AttackBox(self.pos.x, self.pos.y, self, atkDirection, self.pos))
@@ -415,12 +435,18 @@ function Player:keyIsDown(key)
 	return love.keyboard.isDown(reg.controls[self.playerNumber][key]) or self.gamepadAxis[key]
 end
 
--- function Player:respawn()
--- 	local respawnPoint = lume.randomchoice(respawnAreas)
--- 	self.pos.x = respawnPoint.x + self.offset.x
--- 	self.pos.y = respawnPoint.y + self.offset.y
+function Player:respawn(x, y)
+	HC:remove(self.collider)
+	self:init()
+	self.pos.x = x
+	self.pos.y = y
+	self.isAlive = true
+end
 
--- 	self.isAlive = true
--- end
+function Player:bounce(x, y)
+	if x ~= 0 then
+		self.movable.velocity.x = self.movable.velocity.x * -0.7
+	end
+end
 
 return Player

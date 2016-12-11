@@ -9,17 +9,17 @@ function ParticleSystem:new(x, y)
 	self.isParticleSystem = true
 
 	self.ps = love.graphics.newParticleSystem(assets.white, 100)
-	self.ps:setPosition(push:getWidth()/2, push:getHeight()/2)
-	self.ps:setParticleLifetime(0.2, 2)
-	self.ps:setDirection(1.5*3.14)
-	self.ps:setSpread(3.14/3)
-	self.ps:setLinearAcceleration(0, 400)
-	self.ps:setLinearDamping(50)
-	self.ps:setSpin(0, 30)
-	self.ps:setColors(82, 127, 57, 255)
-	self.ps:setRotation(0, 2*3.14)
-	self.ps:setInsertMode('random')
-	self.ps:setSizes(0.4, 0)
+	-- self.ps:setPosition(push:getWidth()/2, push:getHeight()/2)
+	-- self.ps:setParticleLifetime(0.2, 2)
+	-- self.ps:setDirection(1.5*3.14)
+	-- self.ps:setSpread(3.14/3)
+	-- self.ps:setLinearAcceleration(0, 400)
+	-- self.ps:setLinearDamping(50)
+	-- self.ps:setSpin(0, 30)
+	-- self.ps:setColors(82, 127, 57, 255)
+	-- self.ps:setRotation(0, 2*3.14)
+	-- self.ps:setInsertMode('random')
+	-- self.ps:setSizes(0.4, 0)
 
 	return self
 end

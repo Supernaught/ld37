@@ -69,10 +69,13 @@ end
 
 function AttackBox:draw()
 	self.collider:draw()
+	love.graphics.setColor(150,150,100)
 	love.graphics.rectangle("fill", self.pos.x - self.offset.x, self.pos.y - self.offset.y, boxSize.w, boxSize.h)
+	love.graphics.setColor(255,255,255)
 end
 
 function AttackBox:onCollision(other, delta)
+	-- print(other.name)
 end
 
 return AttackBox

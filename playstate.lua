@@ -145,10 +145,12 @@ function playstate:draw()
 
 	push:apply("end")
 
+	love.graphics.setColor(0,0,0)
 	love.graphics.print("Playstate.lua\nFPS: " .. love.timer.getFPS() .. "\nEntities: " .. world:getEntityCount(), 20, 20)
 	love.graphics.print(player.movable.velocity.x, 20, 80)
 	love.graphics.print("PLAYER 1: " .. scores[1], 20, 100)
 	love.graphics.print("PLAYER 2: " .. scores[2], 20, 120)
+	love.graphics.setColor(255,255,255,255)
 end
 
 function playstate:playerScored(playerNum)
@@ -187,11 +189,13 @@ function playstate.respawnPlayer(playerNum)
 	local respawnPoint = lume.randomchoice(respawnAreas)
 
 	if playerNum == 1 then
-		player = Player(respawnPoint.x, respawnPoint.y, 1)
-		playstate.world:add(player)
+		player:respawn(respawnPoint.x, respawnPoint.y)
+		-- player = Player(respawnPoint.x, respawnPoint.y, 1)
+		-- playstate.world:add(player)
 	else
-		player2 = Player(respawnPoint.x, respawnPoint.y, 2, true)
-		playstate.world:add(player2)
+		player2:respawn(respawnPoint.x, respawnPoint.y)
+		-- player2 = Player(respawnPoint.x, respawnPoint.y, 2, true)
+		-- playstate.world:add(player2)
 	end
 end
 
