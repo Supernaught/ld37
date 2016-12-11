@@ -21,8 +21,11 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 	self.offset = offset
 	self.flippedH = false
 	local g = anim8.newGrid(25, 25, self.sprite:getWidth(), self.sprite:getHeight())
-	self.idleAnimation = anim8.newAnimation(g('1-8',1), 0.07)
-	self.animation = self.idleAnimation
+	self.runningAnimation = anim8.newAnimation(g('1-8',1), 0.08)
+	self.idleAnimation = anim8.newAnimation(g('1-8',2), 0.1)
+	self.jumpAnimation = anim8.newAnimation(g('1-4',3), 0.08)
+	self.fallAnimation = anim8.newAnimation(g('5-8',3), 0.08)
+	self.animation = self.fallAnimation
 
 	-- movable component
 	self.movable = {
@@ -86,6 +89,20 @@ function Player:updateAnimations()
 	elseif self.movable.acceleration.x < 0 then
 		self.flippedH = true
 	end
+
+	if not self.platformer.grounded then
+		if self.movable.velocity.y > 0 then
+			self.animation = self.fallAnimation
+		else
+			self.animation = self.jumpAnimation
+		end
+	else
+		 if math.abs(self.movable.velocity.x) > 0 then
+			 self.animation = self.runningAnimation
+		 else
+			 self.animation = self.idleAnimation
+		 end
+	 end
 end
 
 function Player:setupParticles()
