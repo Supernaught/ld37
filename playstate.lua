@@ -12,6 +12,7 @@ local lume = require "lib.lume"
 local Player = require "src.entities.Player"
 local Explosion = require "src.entities.Explosion"
 local Enemy = require "src.entities.Enemy"
+local GrassAnimation = require "src.entities.GrassAnimation"
 
 local player, player2
 local scores = {}
@@ -61,6 +62,7 @@ function playstate:init()
 		require("src.systems.CollisionSystem")(),
 		require("src.systems.SpriteSystem")(),
 		require("src.systems.SpriteSystem")("player"),
+		require("src.systems.SpriteSystem")("grassAnims"),
 		require("src.systems.DrawUISystem")("hudForeground"),
 		-- enemy,
 		player,
@@ -87,6 +89,12 @@ function playstate:init()
 		table.insert(colliders, col)
 	end
 
+	for y,row in pairs(map.layers['animations'].data) do
+		for x,tile in pairs(row) do
+			self.world:add(GrassAnimation((x-1) * reg.T_SIZE, (y-1) * reg.T_SIZE, tile.id))
+		end
+	end
+
 	-- add colliders to tiles in "solid" layer
 	for y,row in pairs(map.layers["solid"].data) do
 		for x,tile in pairs(row) do
@@ -110,6 +118,8 @@ function playstate:keypressed(k)
 		player2:jump()
 	elseif k == reg.controls[2].attack then
 		player2:attack()
+	elseif k == reg.controls[2].roll then
+		player2:roll()
 	end
 
 	-- toggle draw collisions
@@ -145,13 +155,13 @@ function playstate:playerScored(playerNum)
 	scores[playerNum] = scores[playerNum] + 1
 end
 
-function playstate:joystickaxis(j, axis, value)
+function playstate:joystickaxis(j, axis, value)	
 	if axis == 1 then
 		player2.gamepadAxis.x = value
 	elseif axis == 2 then
 		player2.gamepadAxis.y = value
 	elseif axis == 6 then
-		player2.gamepadAxis.rt = true
+		player2.gamepadAxis.rt = value
 	end
 end
 

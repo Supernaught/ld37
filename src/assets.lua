@@ -5,6 +5,7 @@ love.graphics.setDefaultFilter("nearest", "nearest")
 -- Images
 assets.player = love.graphics.newImage("assets/img/player_spritesheet.png")
 assets.white = love.graphics.newImage("assets/img/white.png")
+assets.grass = love.graphics.newImage("assets/img/tiles_spritesheet.png")
 
 -- Fonts
 assets.font_lg = love.graphics.newFont("assets/fonts/04b03.ttf", 24)

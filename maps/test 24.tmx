@@ -62,7 +62,7 @@
   <object id="39" x="456" y="264" width="24" height="24"/>
   <object id="40" x="96" y="264" width="24" height="24"/>
  </objectgroup>
- <layer name="animations" width="24" height="15">
+ <layer name="animations" width="24" height="15" visible="0">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

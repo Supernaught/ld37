@@ -70,12 +70,16 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 	self.gamepadAxis = {
 		x = 0,
 		y = 0,
+		rt = -1,
+		rtReleased = true,
+		-- flags
 		left = false,
 		right = false,
 		up = false,
 		right = false,
 		jump = false,
-		attack = false
+		attack = false,
+		roll = false
 	}
 
 	return self
@@ -142,7 +146,6 @@ function Player:moveControls()
 	local left = self:keyIsDown('left')
 	local right = self:keyIsDown('right')
 	local jump = self:keyIsDown('jump')
-	local roll = self:keyIsDown('roll')
 
 	local applySpeedX = self.movable.speed.x
 
@@ -177,22 +180,38 @@ function Player:moveControls()
 		end
 	end
 
-	-- gamepad walk
+	if self.isUsingGamepad then
+		self:gamepadControls()
+	end
+end
+
+function Player:gamepadControls()
+	-- gamepad stuff
 	local threshold = 0.2
 	-- log.trace(self.gamepadAxis.x .. " " .. self.gamepadAxis.y)
 	self.gamepadAxis.right = false
 	self.gamepadAxis.left = false
 	self.gamepadAxis.down = false
 	self.gamepadAxis.up = false
+	self.gamepadAxis.roll = false
 
 	if self.gamepadAxis.x > threshold then
 		self.gamepadAxis.right = true
 	elseif self.gamepadAxis.x < -threshold then
 		self.gamepadAxis.left = true
-	elseif self.gamepadAxis.y > threshold then
+	end
+
+	if self.gamepadAxis.y > threshold then
 		self.gamepadAxis.down = true
 	elseif self.gamepadAxis.y < -threshold then
 		self.gamepadAxis.up = true
+	end
+
+	if self.gamepadAxis.rt > -0.3 and self.gamepadAxis.rtReleased then
+		self.gamepadAxis.rtReleased = false
+		self:roll()
+	elseif self.gamepadAxis.rt < -0.3 then
+		self.gamepadAxis.rtReleased = true
 	end
 end
 
@@ -215,21 +234,36 @@ end
 
 function Player:roll()
 	if self.platformer.canRoll and not self.platformer.isRolling and not self.isAttackPaused then
-		log.trace("ROLL")
-
 		local left = self:keyIsDown('left')
 		local right = self:keyIsDown('right')
 		local up = self:keyIsDown('up')
 		local down = self:keyIsDown('down')
 
+		if self.isUsingGamepad then
+			print(left, right, up, down)
+		end
+
 		local xMultiplier = 2.5
 		local yMultiplier = 1.5
 
-		self.movable.maxVelocity.x = self.movable.maxVelocity.x * xMultiplier
-		self.movable.maxVelocity.y = self.movable.maxVelocity.y * yMultiplier
+		local xSign = 0
+		local ySign = 0
 
-		self.movable.velocity.x = self.movable.velocity.x * xMultiplier
-		self.movable.velocity.y = self.movable.maxVelocity.y * lume.sign(self.movable.velocity.y)
+		if left then xSign = -1 end
+		if right then xSign = 1 end
+		if up then ySign = -1 end
+		if down then ySign = 1 end
+
+		if xSign ~= 0 and ySign ~= 0 then
+			xMultiplier = xMultiplier / 1.2
+			yMultiplier = yMultiplier / 1.2
+		end
+
+		self.movable.maxVelocity.x = self.movable.defaultMaxVelocity.x * xMultiplier
+		self.movable.maxVelocity.y = self.movable.defaultMaxVelocity.y * yMultiplier
+
+		self.movable.velocity.x = self.movable.maxVelocity.x * xSign
+		self.movable.velocity.y = self.movable.maxVelocity.y * ySign
 
 		self.movable.drag.x = 0
 		self.movable.drag.y = 0
@@ -244,6 +278,10 @@ end
 
 function Player:stopRoll()
 	if self.platformer.isRolling then
+		if self.platformer.grounded then
+			self.platformer.canRoll = true
+		end
+
 		self.platformer.isRolling = false
 		self.movable.drag.x = self.movable.defaultDrag.x
 		self.movable.drag.y = self.movable.defaultDrag.y
