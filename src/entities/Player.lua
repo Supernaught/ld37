@@ -235,7 +235,7 @@ function Player:roll()
 		self.movable.drag.y = 0
 		self.platformer.isRolling = true
 		self.platformer.canRoll = false
-		
+
 		timer.after(0.1, function()
 			self:stopRoll()
 		end)

@@ -52,7 +52,7 @@ function playstate:init()
 	enemy.moveTargetSpeed = 20
 
 	self.world:add(
-		require("src.systems.BGColorSystem")(200,220,250),
+		require("src.systems.BGColorSystem")(238,240,210),
 		require("src.systems.UpdateSystem")(),
 		require("src.systems.DrawSystem")(),
 		require("src.systems.MoveTowardsTargetSystem")(),
