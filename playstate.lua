@@ -14,8 +14,9 @@ local Explosion = require "src.entities.Explosion"
 local Enemy = require "src.entities.Enemy"
 
 local player, player2
-local uiScore
-local score = 0
+local scores = {}
+scores[1] = 0
+scores[2] = 0
 
 respawnAreas = {}
 
@@ -24,6 +25,8 @@ HC = nil
 function playstate:init()
 	HC = HClib.new(150)
 
+	-- map = sti("maps/plain.lua")
+	-- map = sti("maps/plain2.lua")
 	map = sti("maps/test_24.lua")
 
 	-- get respawn areas
@@ -79,7 +82,7 @@ function playstate:init()
 	-- end
 
 	for k, object in pairs(map.layers['collisions'].objects) do
-		col = HC:rectangle((object.x-1), (object.y-1), object.width, object.height)
+		col = HC:rectangle(object.x, object.y, object.width, object.height)
 		col.isSolid = true
 		table.insert(colliders, col)
 	end
@@ -99,10 +102,12 @@ end
 function playstate:keypressed(k)
 	if k == reg.controls[1].jump then
 		player:jump()
-	elseif k == reg.controls[2].jump then
-		player2:jump()
 	elseif k == reg.controls[1].attack then
 		player:attack()
+	elseif k == reg.controls[1].roll then
+		player:roll()
+	elseif k == reg.controls[2].jump then
+		player2:jump()
 	elseif k == reg.controls[2].attack then
 		player2:attack()
 	end
@@ -132,6 +137,12 @@ function playstate:draw()
 
 	love.graphics.print("Playstate.lua\nFPS: " .. love.timer.getFPS() .. "\nEntities: " .. world:getEntityCount(), 20, 20)
 	love.graphics.print(player.movable.velocity.x, 20, 80)
+	love.graphics.print("PLAYER 1: " .. scores[1], 20, 100)
+	love.graphics.print("PLAYER 2: " .. scores[2], 20, 120)
+end
+
+function playstate:playerScored(playerNum)
+	scores[playerNum] = scores[playerNum] + 1
 end
 
 function playstate:joystickaxis(j, axis, value)
@@ -139,6 +150,8 @@ function playstate:joystickaxis(j, axis, value)
 		player2.gamepadAxis.x = value
 	elseif axis == 2 then
 		player2.gamepadAxis.y = value
+	elseif axis == 6 then
+		player2.gamepadAxis.rt = true
 	end
 end
 
@@ -161,7 +174,6 @@ function playstate:gamepadreleased(j, button)
 end
 
 function playstate.respawnPlayer(playerNum)
-	print(playerNum)
 	local respawnPoint = lume.randomchoice(respawnAreas)
 
 	if playerNum == 1 then
@@ -171,7 +183,6 @@ function playstate.respawnPlayer(playerNum)
 		player2 = Player(respawnPoint.x, respawnPoint.y, 2, true)
 		playstate.world:add(player2)
 	end
-
 end
 
 return playstate

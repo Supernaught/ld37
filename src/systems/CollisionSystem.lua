@@ -64,7 +64,10 @@ function CollisionSystem:process(e, dt)
 
 				-- check if grounded
 				if delta.y < 0 and e.movable.velocity.y >= 0 then
+					-- landed on ground
 					col.parent.platformer.grounded = true
+					col.parent.platformer.canDoubleJump = true
+					col.parent.platformer.canRoll = true
 				end
 
 				-- for walljumping
@@ -72,6 +75,7 @@ function CollisionSystem:process(e, dt)
 					e.platformer.isTouchingWall = true
 				end
 
+				-- bump wall head
 				if delta.y > 0 and e.movable.velocity.y < 0 then
 					e.movable.velocity.y = 0
 				end

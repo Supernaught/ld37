@@ -15,7 +15,8 @@ reg.controls[1] = {
 	left = 'a',
 	right = 'd',
 	jump = 'f',
-	attack = 'g'
+	attack = 'g',
+	roll = 'h',
 }
 
 reg.controls[2] = {
@@ -23,8 +24,9 @@ reg.controls[2] = {
 	down = 'down',
 	left = 'left',
 	right = 'right',
-	jump = 'o',
-	attack = 'p',
+	jump = 'i',
+	attack = 'o',
+	roll = 'p'
 }
 
 reg.gamepad = {

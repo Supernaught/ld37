@@ -5,12 +5,12 @@ local AttackBox = GameObject:extend()
 local assets =  require "src.assets"
 
 function AttackBox:new(x, y, playerOwner, direction, posFollow)
-	boxLength = reg.T_SIZE * 3
+	boxLength = reg.T_SIZE * 2
 	boxWidth = reg.T_SIZE * 1.2
 
 	boxSize = {w = boxLength, h = boxWidth}
 
-	atkDistance = reg.T_SIZE * 1.5
+	atkDistance = reg.T_SIZE * 1.2
 
 	if direction == 'down' then
 		y = y + atkDistance
@@ -31,7 +31,7 @@ function AttackBox:new(x, y, playerOwner, direction, posFollow)
 	self.name = "AttackBox"
 	self.isAttackBox = true
 
-	self.playerOwner = playerOwner or 0
+	self.playerOwner = playerOwner
 
 	self.framesElapsed = 0
 
@@ -57,7 +57,7 @@ end
 function AttackBox:update(dt)
 	self.framesElapsed = self.framesElapsed + 1
 
-	if self.framesElapsed > 2 then
+	if self.framesElapsed > 3 then
 		self:die()
 	end
 end

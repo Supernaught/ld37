@@ -16,6 +16,9 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 	self.playerNumber = playerNumber
 	self.isUsingGamepad = isUsingGamepad or false
 
+	-- scoring
+	self.score = 0
+
 	-- sprite component
 	self.sprite = assets.player
 	self.offset = offset
@@ -33,14 +36,24 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 		acceleration = { x = 0, y = 0 },
 		drag = { x = 3200, y = reg.GRAVITY },
 		maxVelocity = { x = 250, y = 400 },
-		speed = { x = 4500, y = 0 } -- used to assign to acceleration
+		speed = { x = 3500, y = 0 }, -- used to assign to acceleration
+		defaultMaxVelocity = { x = 0, y = 0 },
+		defaultSpeed = { x = 0, y = 0 },
+		defaultDrag = { x = 0, y = 0 }
 	}
+
+	self.movable.defaultMaxVelocity = { x = self.movable.maxVelocity.x, y = self.movable.maxVelocity.y }
+	self.movable.defaultSpeed = { x = self.movable.speed.x, y = self.movable.speed.y }
+	self.movable.defaultDrag = { x = self.movable.drag.x, y = self.movable.drag.y }
 
 	-- platformer
 	self.platformer = {
 		grounded = false,
 		jumpForce = -450,
-		isTouchingWall = false
+		isTouchingWall = false,
+		canDoubleJump = true,
+		isRolling = false,
+		canRoll = true
 	}
 
 	-- collider
@@ -49,6 +62,9 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 
 	-- self:setupParticles()
 	self:setDrawLayer("player")
+
+	-- combat
+	self.isAttackPaused = false
 
 	-- gamepad
 	self.gamepadAxis = {
@@ -126,6 +142,7 @@ function Player:moveControls()
 	local left = self:keyIsDown('left')
 	local right = self:keyIsDown('right')
 	local jump = self:keyIsDown('jump')
+	local roll = self:keyIsDown('roll')
 
 	local applySpeedX = self.movable.speed.x
 
@@ -144,15 +161,20 @@ function Player:moveControls()
 	end
 
 	-- wall jumps
-	if self.platformer.isTouchingWall then
-		if self.movable.velocity.y < 0 then
-			self.movable.velocity.y = self.movable.velocity.y/1.1
+	if not self.isAttackPaused then
+		if self.platformer.isTouchingWall then
+			if self.movable.velocity.y < 0 then
+				self.movable.velocity.y = self.movable.velocity.y/1.3
+			end
+
+			-- wall slide gravity
+			self.movable.drag.y = reg.GRAVITY/5
+		elseif jump then
+			-- holding jump key
+			self.movable.drag.y = reg.GRAVITY/2
+		else
+			self.movable.drag.y = reg.GRAVITY
 		end
-		self.movable.drag.y = reg.GRAVITY/5
-	elseif jump then
-		self.movable.drag.y = reg.GRAVITY/2
-	else
-		self.movable.drag.y = reg.GRAVITY
 	end
 
 	-- gamepad walk
@@ -175,23 +197,68 @@ function Player:moveControls()
 end
 
 function Player:onCollision(other, delta)
-	if other and other.name == "AttackBox" and other.isAlive and other.playerOwner ~= self.playerNumber then
-		self:die()
+	if other and other.name == "AttackBox" and other.isAlive and other.playerOwner.playerNumber ~= self.playerNumber then
+		if self.isAlive then
+			self:die()
+			playstate:playerScored(other.playerOwner.playerNumber)
+			-- other.playerOwner.score = other.playerOwner.score + 1
+		end
 	end
 end
 
 function Player:die()
-	if self.isAlive then
-		self.isAlive = false
-		screen:setShake(10)
-		self.toRemove = true
-		timer.after(0.5, function() playstate.respawnPlayer(self.playerNumber) end)
+	self.isAlive = false
+	screen:setShake(10)
+	self.toRemove = true
+	timer.after(0.5, function() playstate.respawnPlayer(self.playerNumber) end)
+end
+
+function Player:roll()
+	if self.platformer.canRoll and not self.platformer.isRolling and not self.isAttackPaused then
+		log.trace("ROLL")
+
+		local left = self:keyIsDown('left')
+		local right = self:keyIsDown('right')
+		local up = self:keyIsDown('up')
+		local down = self:keyIsDown('down')
+
+		local xMultiplier = 2.5
+		local yMultiplier = 1.5
+
+		self.movable.maxVelocity.x = self.movable.maxVelocity.x * xMultiplier
+		self.movable.maxVelocity.y = self.movable.maxVelocity.y * yMultiplier
+
+		self.movable.velocity.x = self.movable.velocity.x * xMultiplier
+		self.movable.velocity.y = self.movable.maxVelocity.y * lume.sign(self.movable.velocity.y)
+
+		self.movable.drag.x = 0
+		self.movable.drag.y = 0
+		self.platformer.isRolling = true
+		self.platformer.canRoll = false
+		
+		timer.after(0.1, function()
+			self:stopRoll()
+		end)
+	end
+end
+
+function Player:stopRoll()
+	if self.platformer.isRolling then
+		self.platformer.isRolling = false
+		self.movable.drag.x = self.movable.defaultDrag.x
+		self.movable.drag.y = self.movable.defaultDrag.y
+		self.movable.maxVelocity.x = self.movable.defaultMaxVelocity.x
+		self.movable.maxVelocity.y = self.movable.defaultMaxVelocity.y
 	end
 end
 
 function Player:jump()
 	if not self.platformer.grounded then
-		log.trace("cant jump")
+		if self.platformer.canDoubleJump then
+			log.trace("double jump")
+			self.platformer.canDoubleJump = false
+			self:applyJumpForce(true)
+		end
 	elseif self.platformer.grounded then
 		self:applyJumpForce()
 	end
@@ -205,6 +272,10 @@ function Player:jump()
 end
 
 function Player:attack()
+	if self.isAttackPaused or not self.isAlive then
+		return
+	end
+
 	atkDirection = nil
 	local threshold = 0.3
 
@@ -242,27 +313,63 @@ function Player:attack()
 		end
 	end
 
-	world:addEntity(AttackBox(self.pos.x, self.pos.y, self.playerNumber, atkDirection, self.pos))
+	self.isAttackPaused = true
+	self:stopRoll()
+
+	-- pause movement a bit
+	self.movable.acceleration.x = 0
+	self.movable.velocity.x = self.movable.velocity.x/2
+	self.movable.velocity.y = 0
+	self:slowDownSpeed(30, 0.25)
+
+	world:addEntity(AttackBox(self.pos.x, self.pos.y, self, atkDirection, self.pos))
 end
 
-function Player:applyJumpForce()
+-- set speed to newSpeed for "t" seconds
+function Player:slowDownSpeed(newSpeed, t)
+	self.movable.speed.x = newSpeed
+	self.movable.drag.y = reg.GRAVITY/3
+	-- self.movable.maxVelocity.x = self.movable.maxVelocity.x * 1.5
+
+	timer.after(t, function()
+		self.movable.maxVelocity.x = self.movable.defaultMaxVelocity.x
+		self.movable.speed.x = self.movable.defaultSpeed.x
+		self.movable.drag.y = reg.GRAVITY/3
+		self.isAttackPaused = false
+	end)
+end
+
+function Player:applyJumpForce(isDoubleJump)
 	self.platformer.grounded = false
-	self.movable.velocity.y = self.platformer.jumpForce
+	self.movable.velocity.y = 0
+
+	if isDoubleJump then
+		self.movable.velocity.y = self.platformer.jumpForce * 0.7
+	else
+		self.movable.velocity.y = self.platformer.jumpForce
+	end
 end
 
 function Player:wallJump(left, right)
-	local wallJumpXForce = 2000
+	log.trace("walljump")
 
+	local wallJumpXForce = 2000
 	self.movable.velocity.x = 0
 
 	if left then
 		self.movable.velocity.x = wallJumpXForce
-	else
+	elseif right then
 		self.movable.velocity.x = -wallJumpXForce
 	end
 
 	self:applyJumpForce()
-	log.trace("walljump")
+	self.platformer.canDoubleJump = true
+
+	-- self.movable.speed.x = self.movable.speed.x/2
+
+	timer.after(0.2, function()
+		self.movable.speed.x = self.movable.defaultSpeed.x
+	end)
 end
 
 -- key = up down left right jump attack
