@@ -19,7 +19,7 @@ push = require "lib.push"
 -- utils
 log = require "lib.log"
 tlog = require "lib.alfonzm.tlog"
-escquit = require "lib.alfonzm.escquit"
+-- escquit = require "lib.alfonzm.escquit"
 
 -- States
 PlayState = require "playstate"
@@ -34,6 +34,7 @@ camera = nil
 
 -- Game settings
 local scale = 2 -- should be the same as in conf
+local timeScale = 1
 
 function love.load()
 	-- love.window.setFullscreen(true, "desktop")
@@ -45,11 +46,13 @@ function love.load()
 
 	-- Init gamestates
 	Gamestate.registerEvents()
-	-- Gamestate.switch(MenuState)
-	Gamestate.switch(PlayState)
+	Gamestate.switch(MenuState)
+	-- Gamestate.switch(PlayState)
 end
 
 function love.update(dt)
+	dt = dt * timeScale
+
 	screen:update(dt)
 	timer.update(dt)
 end
@@ -59,7 +62,7 @@ function love.draw()
 	screen:apply()
 	
 	if world and world.update then
-		world:update(love.timer.getDelta())
+		world:update(love.timer.getDelta() * timeScale)
 	end
 
 	push:apply("end")

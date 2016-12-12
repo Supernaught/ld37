@@ -8,7 +8,7 @@ return {
   height = 15,
   tilewidth = 24,
   tileheight = 24,
-  nextobjectid = 49,
+  nextobjectid = 59,
   properties = {},
   tilesets = {
     {
@@ -78,8 +78,8 @@ return {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         18, 18, 19, 0, 0, 0, 0, 0, 0, 0, 17, 18, 18, 19, 0, 0, 0, 0, 0, 0, 0, 17, 18, 18,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0,
-        0, 17, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 19, 0
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 17, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 19, 0, 0, 0, 0, 0, 0
       }
     },
     {
@@ -115,57 +115,6 @@ return {
     },
     {
       type = "objectgroup",
-      name = "collisions",
-      visible = true,
-      opacity = 1,
-      offsetx = 0,
-      offsety = 0,
-      draworder = "topdown",
-      properties = {},
-      objects = {
-        {
-          id = 41,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = 0,
-          y = 0,
-          width = 24,
-          height = 360,
-          rotation = 0,
-          visible = true,
-          properties = {}
-        },
-        {
-          id = 42,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = 0,
-          y = 0,
-          width = 24,
-          height = 360,
-          rotation = 0,
-          visible = false,
-          properties = {}
-        },
-        {
-          id = 48,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = 552,
-          y = 0,
-          width = 24,
-          height = 360,
-          rotation = 0,
-          visible = true,
-          properties = {}
-        }
-      }
-    },
-    {
-      type = "objectgroup",
       name = "respawns",
       visible = false,
       opacity = 1,
@@ -179,7 +128,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 48,
+          x = 24,
           y = 48,
           width = 24,
           height = 24,
@@ -192,7 +141,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 504,
+          x = 528,
           y = 48,
           width = 24,
           height = 24,
@@ -205,7 +154,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 336,
+          x = 312,
           y = 48,
           width = 24,
           height = 24,
@@ -218,7 +167,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 216,
+          x = 240,
           y = 48,
           width = 24,
           height = 24,
@@ -257,7 +206,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 192,
+          x = 216,
           y = 264,
           width = 24,
           height = 24,
@@ -270,7 +219,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 360,
+          x = 336,
           y = 264,
           width = 24,
           height = 24,
@@ -279,12 +228,12 @@ return {
           properties = {}
         },
         {
-          id = 39,
+          id = 53,
           name = "",
           type = "",
           shape = "rectangle",
-          x = 456,
-          y = 264,
+          x = 264,
+          y = 216,
           width = 24,
           height = 24,
           rotation = 0,
@@ -292,12 +241,38 @@ return {
           properties = {}
         },
         {
-          id = 40,
+          id = 54,
           name = "",
           type = "",
           shape = "rectangle",
-          x = 96,
-          y = 264,
+          x = 528,
+          y = 192,
+          width = 24,
+          height = 24,
+          rotation = 0,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 57,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 24,
+          y = 192,
+          width = 24,
+          height = 24,
+          rotation = 0,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 58,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 288,
+          y = 216,
           width = 24,
           height = 24,
           rotation = 0,
@@ -325,7 +300,7 @@ return {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         37, 37, 47, 0, 0, 0, 0, 0, 0, 27, 37, 37, 37, 37, 47, 0, 0, 0, 0, 0, 0, 27, 37, 37,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 27, 37, 47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 27, 37, 47, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -333,9 +308,20 @@ return {
         37, 37, 47, 0, 0, 0, 0, 0, 0, 0, 27, 37, 37, 47, 0, 0, 0, 0, 0, 0, 0, 27, 37, 37,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 27, 37, 37, 37, 37, 0, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 0, 37, 37, 37, 37, 47, 0,
+        0, 0, 0, 0, 0, 0, 27, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 47, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
       }
+    },
+    {
+      type = "objectgroup",
+      name = "collisions",
+      visible = false,
+      opacity = 1,
+      offsetx = 0,
+      offsety = 0,
+      draworder = "topdown",
+      properties = {},
+      objects = {}
     }
   }
 }

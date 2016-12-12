@@ -3,19 +3,24 @@
 playstate = {}
 
 -- libs
+local flux = require "lib.flux"
 local HClib = require "lib.hc"
 local Camera = require "lib.hump.camera"
-local sti = require "lib.sti"
 local lume = require "lib.lume"
 
 -- entities
 local Player = require "src.entities.Player"
 local Explosion = require "src.entities.Explosion"
-local Enemy = require "src.entities.Enemy"
 local GrassAnimation = require "src.entities.GrassAnimation"
+local TileMap = require "src.entities.TileMap"
+local UIText = require "src.entities.UIText"
+local UIImage = require "src.entities.UIImage"
+local assets =  require "src.assets"
 
-local player, player2
+local players = {}
 local scores = {}
+local isShowingGameOverHud = false
+
 scores[1] = 0
 scores[2] = 0
 
@@ -23,15 +28,17 @@ respawnAreas = {}
 
 HC = nil
 
-function playstate:init()
+function playstate:enter()
+	timeScale = 1
+	reg.gameOver = false
+	timer.clear()
+
 	HC = HClib.new(150)
 
-	-- map = sti("maps/plain.lua")
-	-- map = sti("maps/plain2.lua")
-	map = sti("maps/test_24.lua")
+	tileMap = TileMap()
 
 	-- get respawn areas
-	for k, respawnPoint in pairs(map.layers['respawns'].objects) do
+	for k, respawnPoint in pairs(tileMap.map.layers['respawns'].objects) do
 		table.insert(respawnAreas, {x = respawnPoint.x, y = respawnPoint.y})
 	end
 
@@ -42,21 +49,18 @@ function playstate:init()
 	local respawnPoint = lume.randomchoice(respawnAreas)
 	local respawnPoint2 = lume.randomchoice(respawnAreas)
 
-	player = Player(respawnPoint.x, respawnPoint.y, 1)
-	player2 = Player(respawnPoint2.x, respawnPoint2.y, 2, true)
+	players[1] = Player(24, 24 * 9, 1, true)
+	players[2] = Player(24 * 22, 24 * 9, 2, true)
 
 	camera = Camera(0, 0, 1)
-
-	enemy = Enemy(10,10)
-	enemy.moveTowardsTarget = true
-	enemy.targetPos = {x = push:getWidth()/2, y = push:getHeight()/2}
-	enemy.moveTargetSpeed = 20
 
 	self.world:add(
 		require("src.systems.BGColorSystem")(238,240,210),
 		require("src.systems.UpdateSystem")(),
+		require("src.systems.DrawSystem")("jumpParticles"),
 		require("src.systems.DrawSystem")(),
 		require("src.systems.MoveTowardsTargetSystem")(),
+		require("src.systems.TileMapSystem")(),
 		require("src.systems.DrawSystem")("playerParticles"),
 		require("src.systems.MovableSystem")(),
 		require("src.systems.CollisionSystem")(),
@@ -64,39 +68,37 @@ function playstate:init()
 		require("src.systems.SpriteSystem")("player"),
 		require("src.systems.SpriteSystem")("grassAnims"),
 		require("src.systems.DrawUISystem")("hudForeground"),
-		-- enemy,
-		player,
-		player2
-		-- Explosion(10,10)
+		tileMap,
+		players[1],
+		players[2]
 	)
 
 	colliders = {}
 
-	-- for k, layer in pairs(map.layers) do
-	-- 	log.trace(k .. "---" .. layer.name)
-	-- 	if layer.objects then
-	-- 		for i, obj in pairs(layer.objects) do
-	-- 			for k, d in pairs(obj) do
-	-- 				print(k .. ": " .. tostring(d))
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
-
-	for k, object in pairs(map.layers['collisions'].objects) do
+	-- add colliders
+	for k, object in pairs(tileMap.map.layers['collisions'].objects) do
 		col = HC:rectangle(object.x, object.y, object.width, object.height)
 		col.isSolid = true
 		table.insert(colliders, col)
 	end
 
-	for y,row in pairs(map.layers['animations'].data) do
+	-- add map border collisions
+	leftWall = HC:rectangle(-reg.T_SIZE, 0, reg.T_SIZE, push:getHeight())
+	leftWall.isSolid = true
+	rightWall = HC:rectangle(push:getWidth(), 0, reg.T_SIZE, push:getHeight())
+	rightWall.isSolid = true
+	topWall = HC:rectangle(0, -24, push:getWidth(), 24)
+	topWall.isSolid = true
+
+	-- add grass animations
+	for y,row in pairs(tileMap.map.layers['animations'].data) do
 		for x,tile in pairs(row) do
 			self.world:add(GrassAnimation((x-1) * reg.T_SIZE, (y-1) * reg.T_SIZE, tile.id))
 		end
 	end
 
 	-- add colliders to tiles in "solid" layer
-	for y,row in pairs(map.layers["solid"].data) do
+	for y,row in pairs(tileMap.map.layers["solid"].data) do
 		for x,tile in pairs(row) do
 			col = HC:rectangle((x-1) * tile.width, (y-1) * tile.height, tile.width, tile.height)
 			col.isSolid = true
@@ -104,22 +106,65 @@ function playstate:init()
 		end
 	end
 
-	map:removeLayer("collisions")
+	tileMap.map:removeLayer("collisions")
+
+	self:setupHud()
+	self:setupReadyFight()
+end
+
+function playstate:setupHud()
+	local pad = 2
+	local p1Portrait = UIImage(assets.playerPortrait[1], pad, pad, 2)
+	local p2Portrait = UIImage(assets.playerPortrait[2], push:getWidth() - assets.playerPortrait[2]:getWidth() * 2 - pad, pad, 2)
+
+	world:add(p1Portrait)
+	world:add(p2Portrait)
+end
+
+function playstate:setupReadyFight()
+	local readyText = UIImage(assets.ready, "center", -50)
+	local fightText = UIImage(assets.fight, "center", push:getHeight()/2 - 20)
+
+	world:add(readyText)
+
+	flux.to(readyText.pos, 1, {y = push:getHeight()/2 - 20}):ease("expoout"):oncomplete(function()
+		world:remove(readyText)
+		world:add(fightText)
+		screen:setShake(10)
+		screen:setRotation(0.1)
+		timer.after(0.7, function()
+			world:remove(fightText)
+		end)
+	end)
 end
 
 function playstate:keypressed(k)
-	if k == reg.controls[1].jump then
-		player:jump()
-	elseif k == reg.controls[1].attack then
-		player:attack()
-	elseif k == reg.controls[1].roll then
-		player:roll()
-	elseif k == reg.controls[2].jump then
-		player2:jump()
-	elseif k == reg.controls[2].attack then
-		player2:attack()
-	elseif k == reg.controls[2].roll then
-		player2:roll()
+	if not reg.gameOver then
+		if k == reg.controls[1].jump then
+			players[1]:jump()
+		elseif k == reg.controls[1].attack then
+			players[1]:attack()
+		elseif k == reg.controls[1].roll then
+			players[1]:roll()
+		elseif k == reg.controls[2].jump then
+			players[2]:jump()
+		elseif k == reg.controls[2].attack then
+			players[2]:attack()
+		elseif k == reg.controls[2].roll then
+			players[2]:roll()
+		end
+	else
+		if k == 'return' or k == 'space' then
+			Gamestate.switch(MenuState)
+		end
+
+		if k == 'r' then
+			Gamestate.switch(PlayState)
+		end
+	end
+
+	if k == 'escape' then
+		Gamestate.switch(MenuState)
 	end
 
 	-- toggle draw collisions
@@ -129,13 +174,12 @@ function playstate:keypressed(k)
 end
 
 function playstate:update(dt)
-	map:update(dt)
+	flux.update(dt)
 end
 
 function playstate:draw()
 	screen:apply()
 	push:apply("start")
-	map:draw()
 
 	if reg.DEBUG_COLLISIONS then
 		for i,c in pairs(colliders) do
@@ -146,57 +190,90 @@ function playstate:draw()
 	push:apply("end")
 
 	love.graphics.setColor(0,0,0)
-	love.graphics.print("Playstate.lua\nFPS: " .. love.timer.getFPS() .. "\nEntities: " .. world:getEntityCount(), 20, 20)
-	love.graphics.print(player.movable.velocity.x, 20, 80)
-	love.graphics.print("PLAYER 1: " .. scores[1], 20, 100)
-	love.graphics.print("PLAYER 2: " .. scores[2], 20, 120)
+	-- love.graphics.print("Playstate.lua\nFPS: " .. love.timer.getFPS() .. "\nEntities: " .. world:getEntityCount(), 20, 20)
+	-- love.graphics.print("PLAYER 1: " .. scores[1], 20, 100)
+	-- love.graphics.print("PLAYER 2: " .. scores[2], 20, 120)
 	love.graphics.setColor(255,255,255,255)
 end
 
-function playstate:playerScored(playerNum)
+function playstate:playerScored(playerNum) -- player num of scorer
 	scores[playerNum] = scores[playerNum] + 1
+
+	if scores[playerNum] >= reg.MAX_SCORE then
+		self:gameOver()
+	end
+end
+
+function playstate:gameOver()
+	screen:setShake(100)
+	reg.gameOver = true
+	timeScale = 0.2
+	timer.after(3, function() timeScale = 1 end)
+	timer.after(3.5, function() self.showGameOverHud() end)
+end
+
+function playstate:showGameOverHud()
+	screen:setShake(15)
+	-- screen:setRotation(0.1)
+
+	isShowingGameOverHud = true
+
+	local gameOverText = UIImage(assets.gameOver, "center", push:getHeight()/2 - 50)
+	world:add(gameOverText)
+
+	local winner = 2
+
+	timer.after(1, function()
+		local playerWins = UIImage(assets.playerWin[winner], "center", push:getHeight()/2 + 10)
+		screen:setShake(10)
+		-- screen:setRotation(-0.05)
+		world:add(playerWins)
+	end)
 end
 
 function playstate:joystickaxis(j, axis, value)	
+	if reg.gameOver then return end
+
+	local gamepadId, gamepadInstanceId = j:getID()
+
 	if axis == 1 then
-		player2.gamepadAxis.x = value
+		players[gamepadId].gamepadAxis.x = value
 	elseif axis == 2 then
-		player2.gamepadAxis.y = value
+		players[gamepadId].gamepadAxis.y = value
 	elseif axis == 6 then
-		player2.gamepadAxis.rt = value
+		players[gamepadId].gamepadAxis.rt = value
 	end
 end
 
 function playstate:gamepadpressed(j, button)
+	if reg.gameOver then return end
+
+	local gamepadId, gamepadInstanceId = j:getID()
+
 	if button == 'a' then
-		player2.gamepadAxis.jump = true
-		player2:jump()
+		players[gamepadId].gamepadAxis.jump = true
+		players[gamepadId]:jump()
 	elseif button == 'x' then
-		player2.gamepadAxis.attack = true
-		player2:attack()
+		players[gamepadId].gamepadAxis.attack = true
+		players[gamepadId]:attack()
 	end
 end
 
 function playstate:gamepadreleased(j, button)
+	if reg.gameOver then return end
+
+	local gamepadId, gamepadInstanceId = j:getID()
+
 	if button == 'a' then
-		player2.gamepadAxis.jump = false
+		players[gamepadId].gamepadAxis.jump = false
 	elseif button == 'x' then
-		player2.gamepadAxis.attack = false
+		players[gamepadId].gamepadAxis.attack = false
 	end
 end
 
 function playstate.respawnPlayer(playerNum)
 	local respawnPoint = lume.randomchoice(respawnAreas)
-
-	if playerNum == 1 then
-		player:respawn(respawnPoint.x, respawnPoint.y)
-		-- player = Player(respawnPoint.x, respawnPoint.y, 1)
-		-- playstate.world:add(player)
-	else
-		player2:respawn(respawnPoint.x, respawnPoint.y)
-		-- player2 = Player(respawnPoint.x, respawnPoint.y, 2, true)
-		-- playstate.world:add(player2)
-	end
+	players[playerNum]:respawn(respawnPoint.x, respawnPoint.y)
 end
 
 return playstate

@@ -13,6 +13,7 @@
 --
 
 local CollisionSystem = tiny.processingSystem(class "CollisionSystem")
+local assets =  require "src.assets"
 
 CollisionSystem.filter = tiny.requireAll("collider", "pos", "onCollision")
 
@@ -53,6 +54,10 @@ function CollisionSystem:process(e, dt)
 
 				col.parent.pos.x = col.parent.pos.x + delta.x
 
+				-- if delta.x ~= 0 then
+					-- print(col.parent.movable.velocity.x, delta.x, delta.y)
+				-- end
+
 				-- bounce if dead
 				if not col.parent.isAlive then
 					col.parent:bounce(delta.x, delta.y)
@@ -70,6 +75,7 @@ function CollisionSystem:process(e, dt)
 				-- check if grounded
 				if delta.y < 0 and e.movable.velocity.y >= 0 then
 					-- landed on ground
+					assets.sfx.ground:clone():play()
 					col.parent.platformer.grounded = true
 					col.parent.platformer.canDoubleJump = true
 					col.parent.platformer.canRoll = true

@@ -22,6 +22,7 @@ function MovableSystem:init()
 end
 
 function MovableSystem:process(e, dt)
+	dt = dt * timeScale
 	local mov = e.movable
 	local vel, accel, maxVel, drag = mov.velocity, mov.acceleration, mov.maxVelocity, mov.drag
 

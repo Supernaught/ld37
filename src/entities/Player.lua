@@ -1,3 +1,4 @@
+
 local GameObject = require "src.entities.GameObject"
 local ParticlesTrail = require "src.entities.particles.ParticlesTrail"
 local ParticlesPlayerDie = require "src.entities.particles.ParticlesPlayerDie"
@@ -22,10 +23,11 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 	self.score = 0
 
 	-- sprite component
-	self.sprite = assets.player
+	self.sprite = assets.player[playerNumber]
 	self.offset = offset
 	self.flippedH = false
 	local g = anim8.newGrid(25, 25, self.sprite:getWidth(), self.sprite:getHeight())
+	self.grid = g
 	self.runningAnimation = anim8.newAnimation(g('1-8',1), 0.08)
 	self.idleAnimation = anim8.newAnimation(g('1-8',2), 0.1)
 	self.jumpAnimation = anim8.newAnimation(g('1-4',3), 0.08)
@@ -99,9 +101,16 @@ function Player:update(dt)
 
 	self:updateAnimations()
 
+	if self.pos.y > push:getHeight() + 20 then
+		if self.isAlive then
+			screen:setShake(20)
+			self:die(nil)
+		end
+	end
+
 	if self.trailPs and self.platformer.isRolling then
 		self.trailPs.ps:setPosition(self.pos.x + math.random(-2,2), self.pos.y + 5)
-		self.trailPs.ps:emit(2)
+		self.trailPs.ps:emit(1)
 	end
 end
 
@@ -131,7 +140,13 @@ function Player:updateAnimations()
 end
 
 function Player:setupParticles()
-	self.trailPs = ParticlesTrail()
+	local f = self.grid(1,1)
+	local frame = {}
+	for i, o in pairs(f) do
+		frame = o
+	end
+
+	self.trailPs = ParticlesTrail(self.playerNumber)
 	self.jumpPs = ParticlesJump()
 	world:add(self.trailPs)
 	world:add(self.jumpPs)
@@ -149,9 +164,9 @@ function Player:moveControls()
 	-- end
 
 	-- walk movement
-	if left and not right and self.isAlive then
+	if left and not right and self.isAlive and not reg.gameOver then
 		self.movable.acceleration.x = -applySpeedX
-	elseif right and not left and self.isAlive then
+	elseif right and not left and self.isAlive and not reg.gameOver then
 		self.movable.acceleration.x = applySpeedX
 	else
 		self.platformer.isTouchingWall = false
@@ -161,7 +176,7 @@ function Player:moveControls()
 	-- wall jumps
 	if not self.isAttackPaused then
 		if self.platformer.isTouchingWall then
-			if self.movable.velocity.y < 0 then
+			if math.abs(self.movable.velocity.y) > 0.3 then
 				self.movable.velocity.y = self.movable.velocity.y/1.3
 			end
 
@@ -183,7 +198,6 @@ end
 function Player:gamepadControls()
 	-- gamepad stuff
 	local threshold = 0.2
-	-- log.trace(self.gamepadAxis.x .. " " .. self.gamepadAxis.y)
 	self.gamepadAxis.right = false
 	self.gamepadAxis.left = false
 	self.gamepadAxis.down = false
@@ -213,8 +227,9 @@ end
 function Player:onCollision(other, delta)
 	if other and other.name == "AttackBox" and other.isAlive and other.playerOwner.playerNumber ~= self.playerNumber then
 		if self.isAlive then
-			self:die(other.pos.x)
+			screen:setShake(20)
 			playstate:playerScored(other.playerOwner.playerNumber)
+			self:die(other.pos.x)
 			-- other.playerOwner.score = other.playerOwner.score + 1
 		end
 	end
@@ -222,12 +237,18 @@ end
 
 function Player:die(attackBoxX)
 	self.isAlive = false
-	screen:setShake(10)
 
-	local dir = 1
+	lume.randomchoice({assets.sfx.hit2, assets.sfx.death}):clone():play()
+	-- assets.sfx.hit2:clone():play()
 
-	if attackBoxX > self.pos.x then
+	local dir = 0
+
+	if not attackBoxX then
+		dir = 0
+	elseif attackBoxX > self.pos.x then
 		dir = -1
+	else
+		dir = 1
 	end
 
 	self.movable.maxVelocity.x = self.movable.maxVelocity.x * 2 * dir
@@ -237,26 +258,26 @@ function Player:die(attackBoxX)
 	self.movable.drag.x = 500
 
 	-- self.toRemove = true
-	timer.after(1, function() playstate.respawnPlayer(self.playerNumber) end)
+	-- respawn
+	if not reg.gameOver then
+		timer.after(1, function() playstate.respawnPlayer(self.playerNumber) end)
+	end
 
 	-- particles
-	local psDie = ParticlesPlayerDie(self.pos.x, self.pos.y)
+	local psDie = ParticlesPlayerDie(self.pos.x, self.pos.y, self.playerNumber)
 	world:add(psDie)
 end
 
 function Player:roll()
+	if not self.isAlive then
+		return
+	end
+
 	if self.platformer.canRoll and not self.platformer.isRolling and not self.isAttackPaused then
 		local left = self:keyIsDown('left')
 		local right = self:keyIsDown('right')
 		local up = self:keyIsDown('up')
 		local down = self:keyIsDown('down')
-
-		if self.isUsingGamepad then
-			print(left, right, up, down)
-		end
-
-		local xMultiplier = 2.5
-		local yMultiplier = 1.5
 
 		local xSign = 0
 		local ySign = 0
@@ -266,6 +287,14 @@ function Player:roll()
 		if up then ySign = -1 end
 		if down then ySign = 1 end
 
+		if xSign == 0 and ySign == 0 then
+			return
+		end
+
+		local xMultiplier = 2.5
+		local yMultiplier = 1.5
+
+		-- pseudo-normalize if diagonal
 		if xSign ~= 0 and ySign ~= 0 then
 			xMultiplier = xMultiplier / 1.2
 			yMultiplier = yMultiplier / 1.2
@@ -309,12 +338,13 @@ function Player:jump()
 
 	if not self.platformer.grounded then
 		if self.platformer.canDoubleJump then
-			log.trace("double jump")
 			self.platformer.canDoubleJump = false
 			self:applyJumpForce(true)
+			return
 		end
 	elseif self.platformer.grounded then
 		self:applyJumpForce()
+		return
 	end
 
 	local left = self:keyIsDown('left')
@@ -323,10 +353,6 @@ function Player:jump()
 	if self.platformer.isTouchingWall and (left or right) then
 		self:wallJump(left, right)
 	end
-
-	-- particles
-	self.jumpPs.ps:setPosition(self.pos.x, self.pos.y + 5)
-	self.jumpPs.ps:emit(10)
 end
 
 function Player:attack()
@@ -359,16 +385,16 @@ function Player:attack()
 				atkDirection = 'right'
 			end
 		end
-	else -- if not gamepad
-		if self:keyIsDown('down') then
-			atkDirection = 'down'
-		elseif self:keyIsDown('up') then
-			atkDirection = 'up'
-		elseif self.flippedH then
-			atkDirection = 'left'
-		else
-			atkDirection = 'right'
-		end
+	end
+
+	if self:keyIsDown('down') then
+		atkDirection = 'down'
+	elseif self:keyIsDown('up') then
+		atkDirection = 'up'
+	elseif self.flippedH then
+		atkDirection = 'left'
+	else
+		atkDirection = 'right'
 	end
 
 	self.isAttackPaused = true
@@ -397,20 +423,24 @@ function Player:slowDownSpeed(newSpeed, t)
 	end)
 end
 
-function Player:applyJumpForce(isDoubleJump)
+function Player:applyJumpForce(isDoubleJump, multiplier)
 	self.platformer.grounded = false
 	self.movable.velocity.y = 0
+
+	-- particles
+	self.jumpPs.ps:setPosition(self.pos.x, self.pos.y + 5)
+	self.jumpPs:emit()
+
+	assets.sfx.jump:clone():play()
 
 	if isDoubleJump then
 		self.movable.velocity.y = self.platformer.jumpForce * 0.7
 	else
-		self.movable.velocity.y = self.platformer.jumpForce
+		self.movable.velocity.y = self.platformer.jumpForce * (multiplier or 1)
 	end
 end
 
 function Player:wallJump(left, right)
-	log.trace("walljump")
-
 	local wallJumpXForce = 2000
 	self.movable.velocity.x = 0
 

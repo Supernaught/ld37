@@ -8,28 +8,21 @@ function ParticleSystem:new(x, y)
 	self.name = "ParticleSystem"
 	self.isParticleSystem = true
 
-	self.ps = love.graphics.newParticleSystem(assets.white, 100)
-	-- self.ps:setPosition(push:getWidth()/2, push:getHeight()/2)
-	-- self.ps:setParticleLifetime(0.2, 2)
-	-- self.ps:setDirection(1.5*3.14)
-	-- self.ps:setSpread(3.14/3)
-	-- self.ps:setLinearAcceleration(0, 400)
-	-- self.ps:setLinearDamping(50)
-	-- self.ps:setSpin(0, 30)
-	-- self.ps:setColors(82, 127, 57, 255)
-	-- self.ps:setRotation(0, 2*3.14)
-	-- self.ps:setInsertMode('random')
-	-- self.ps:setSizes(0.4, 0)
-
+	-- self.ps = love.graphics.newParticleSystem(assets.white, 100)
+	self.particleSystems = {}
 	return self
 end
 
 function ParticleSystem:update(dt)
-	self.ps:update(dt)
+	for i, ps in pairs(self.particleSystems) do
+		ps:update(dt * timeScale)
+	end
 end
 
 function ParticleSystem:draw()
-	love.graphics.draw(self.ps, 0, 0, 0, 1, 1)
+	for i, ps in pairs(self.particleSystems) do
+		love.graphics.draw(ps, 0, 0, 0, 1, 1)
+	end
 end
 
 return ParticleSystem

@@ -2,13 +2,15 @@ menustate = {}
 
 local flux = require "lib.flux"
 local UIText = require "src.entities.UIText"
-local PlayState = require "playstate"
 local assets =  require "src.assets"
 
 local title, pressToPlay
 local dir = 1
 
-function menustate:init()
+function menustate:enter()
+	timeScale = 1
+	timer.clear()
+	
 	local titleImage = UIText("GAME TITLE", 0, -20, push:getWidth(), nil, nil, assets.font_lg)
 
 	local pressStart = UIText("Press SPACE to start", 0, push:getHeight() * 0.7, push:getWidth(), nil, nil, assets.font_sm)
@@ -23,7 +25,7 @@ function menustate:init()
 		pressStart
 	)
 
-	flux.to(titleImage.pos, 1, {y = 30})
+	flux.to(titleImage.pos, 0.5, {y = 50})
 	world = self.world
 end
 

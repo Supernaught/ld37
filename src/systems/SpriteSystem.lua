@@ -19,6 +19,7 @@
 
 local assets =  require "src.assets"
 local SpriteSystem = tiny.processingSystem(class "SpriteSystem")
+local lume = require "lib.lume"
 
 function SpriteSystem:init(zIndex)
     self.z = "zIndex" .. (zIndex or 1)
