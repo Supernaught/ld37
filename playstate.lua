@@ -279,8 +279,8 @@ end
 
 function playstate:keypressed(k)
 	if not reg.gameOver then
-		if not reg.startPlay then return end 
-		
+		if not reg.startPlay then return end
+
 		if k == reg.controls[1].jump then
 			players[1]:jump()
 		elseif k == reg.controls[1].attack then
