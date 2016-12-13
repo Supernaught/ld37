@@ -17,6 +17,9 @@ assets.playerPortrait[2] = love.graphics.newImage("assets/img/player_portrait2.p
 assets.white = love.graphics.newImage("assets/img/white.png")
 assets.grass = love.graphics.newImage("assets/img/tiles_spritesheet.png")
 
+assets.attack = love.graphics.newImage("assets/img/burst_spritesheet.png")
+assets.attackVert = love.graphics.newImage("assets/img/burst_spritesheet_vertical.png")
+
 -- text images
 assets.fight = love.graphics.newImage("assets/img/fight_text.png")
 assets.ready = love.graphics.newImage("assets/img/ready_text.png")
