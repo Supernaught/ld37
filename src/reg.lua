@@ -3,9 +3,11 @@ local reg = {}
 -- gameplay
 reg.startPlay = false
 reg.gameOver = false
-reg.gameTime = 0
 reg.MAX_SCORE = 100
-reg.GAME_DURATION = 60 -- seconds
+
+-- game duration in sec
+reg.GAME_DURATION = 60
+reg.gameTime = reg.GAME_DURATION
 
 -- reg.T_SIZE = 16
 reg.T_SIZE = 24

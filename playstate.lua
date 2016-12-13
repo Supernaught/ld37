@@ -22,8 +22,11 @@ local players = {}
 local scores = {}
 local isShowingGameOverHud = false
 
+-- ui stuff
 scoreUI = {}
 timeUI = {}
+local readyText
+local fightText
 
 scores[1] = 0
 scores[2] = 0
@@ -34,7 +37,7 @@ HC = nil
 
 function playstate:enter()
 	timeScale = 1
-	reg.gameTime = 0
+	reg.gameTime = reg.GAME_DURATION
 	reg.gameOver = false
 	reg.startPlay = false
 	timer.clear()
@@ -66,7 +69,12 @@ function playstate:enter()
 	camera = Camera(0, 0, 1)
 
 	self.world:add(
-		require("src.systems.BGColorSystem")(238,240,210),
+		-- require("src.systems.BGColorSystem")(111, 157, 168),
+		require("src.systems.BGColorSystem")(60, 97, 102),
+
+		-- require("src.systems.BGColorSystem")(76, 116, 126),
+		-- require("src.systems.BGColorSystem")(149, 187, 167),
+		-- require("src.systems.BGColorSystem")(77, 125, 125),
 		require("src.systems.UpdateSystem")(),
 		require("src.systems.DrawSystem")("jumpParticles"),
 		require("src.systems.DrawSystem")(),
@@ -136,32 +144,54 @@ function playstate:setupHud()
 	scoreUI[1] = UIText("0", 80, 12, 70, "center", nil, assets.font_sm)
 	scoreUI[2] = UIText("0", 445, 12, 70, "center", nil, assets.font_sm)
 
+	timeUI = UIText(reg.gameTime, 0, 8, push:getWidth(), "center", nil,  assets.font_sm)
+
 	world:add(p1Portrait)
 	world:add(p2Portrait)
 
 	world:add(scoreUI[1])
 	world:add(scoreUI[2])
+	world:add(timeUI)
 end
 
 function playstate:setupReadyFight()
-	local readyText = UIImage(assets.ready, "center", -50)
-	local fightText = UIImage(assets.fight, "center", push:getHeight()/2 - 20)
+	-- READY
+	readyText = UIImage(assets.ready, "center", -50)
 
 	world:add(readyText)
-
 	flux.to(readyText.pos, 1, {y = push:getHeight()/2 - 20}):ease("expoinout"):oncomplete(function()
-		timer.after(0.5, function()
-			world:remove(readyText)
-
-			world:add(fightText)
-			screen:setShake(10)
-			screen:setRotation(0.1)
-			timer.after(0.6, function()
-				reg.startPlay = true
-				world:remove(fightText)
-			end)
-		end)
+		timer.after(0.5, self.startFight(self))
 	end)
+end
+
+function playstate:startFight()
+	-- FIGHT!
+	fightText = UIImage(assets.fight, "center", push:getHeight()/2 - 20)
+	world:remove(readyText)
+
+	world:add(fightText)
+	screen:setShake(10)
+	screen:setRotation(0.1)
+	timer.after(0.6, function()
+		-- START PLAY
+		reg.startPlay = true
+
+		timer.every(1, function()
+			if not reg.gameOver then
+				reg.gameTime = reg.gameTime - 1
+				timeUI.text = reg.gameTime
+
+				if reg.gameTime <= 0 then
+					self:gameTimeEnd()
+				end
+			end
+		end)
+		world:remove(fightText)
+	end)
+end
+
+function playstate:gameTimeEnd()
+	self:gameOver()						
 end
 
 function playstate:keypressed(k)
@@ -216,7 +246,8 @@ function playstate:draw()
 	end
 	push:apply("end")
 
-	love.graphics.setColor(71,125,196)
+	-- water box below screen (for screenshake)
+	love.graphics.setColor(9, 142, 135)
 	love.graphics.rectangle("fill", -100, push:getHeight() * 2 - 15, push:getWidth() * 4, 200)
 	love.graphics.setColor(255,255,255,255)
 end
@@ -279,8 +310,8 @@ end
 
 function playstate:keypressed(k)
 	if not reg.gameOver then
-		if not reg.startPlay then return end
-
+		if not reg.startPlay then return end 
+		
 		if k == reg.controls[1].jump then
 			players[1]:jump()
 		elseif k == reg.controls[1].attack then
