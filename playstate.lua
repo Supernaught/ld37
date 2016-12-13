@@ -231,11 +231,10 @@ function playstate:showGameOverHud()
 	end)
 end
 
-function playstate:joystickaxis(j, axis, value)	
+function playstate:joystickaxis(j, axis, value)
 	if reg.gameOver then return end
 
 	local gamepadId, gamepadInstanceId = j:getID()
-
 	if axis == 1 then
 		players[gamepadId].gamepadAxis.x = value
 	elseif axis == 2 then
