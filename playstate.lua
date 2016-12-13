@@ -12,6 +12,7 @@ local lume = require "lib.lume"
 local Player = require "src.entities.Player"
 local Explosion = require "src.entities.Explosion"
 local GrassAnimation = require "src.entities.GrassAnimation"
+local WaterAnimation = require "src.entities.WaterAnimation"
 local TileMap = require "src.entities.TileMap"
 local UIText = require "src.entities.UIText"
 local UIImage = require "src.entities.UIImage"
@@ -20,6 +21,9 @@ local assets =  require "src.assets"
 local players = {}
 local scores = {}
 local isShowingGameOverHud = false
+
+scoreUI = {}
+timeUI = {}
 
 scores[1] = 0
 scores[2] = 0
@@ -30,9 +34,15 @@ HC = nil
 
 function playstate:enter()
 	timeScale = 1
+	reg.gameTime = 0
 	reg.gameOver = false
 	reg.startPlay = false
 	timer.clear()
+
+	scores[1] = 0
+	scores[2] = 0
+	scoreUI[1] = 0
+	scoreUI[2] = 0
 
 	HC = HClib.new(150)
 
@@ -68,6 +78,7 @@ function playstate:enter()
 		require("src.systems.SpriteSystem")(),
 		require("src.systems.SpriteSystem")("player"),
 		require("src.systems.SpriteSystem")("grassAnims"),
+		require("src.systems.SpriteSystem")("waterAnims"),
 		require("src.systems.DrawUISystem")("hudForeground"),
 		tileMap,
 		players[1],
@@ -94,7 +105,11 @@ function playstate:enter()
 	-- add grass animations
 	for y,row in pairs(tileMap.map.layers['animations'].data) do
 		for x,tile in pairs(row) do
-			self.world:add(GrassAnimation((x-1) * reg.T_SIZE, (y-1) * reg.T_SIZE, tile.id))
+			if tile.id == 10 or tile.id == 20 or tile.id == 30 then
+				self.world:add(GrassAnimation((x-1) * reg.T_SIZE, (y-1) * reg.T_SIZE, tile.id))
+			elseif tile.id == 50 then
+				self.world:add(WaterAnimation((x-1) * reg.T_SIZE, (y-1) * reg.T_SIZE, tile.id))
+			end
 		end
 	end
 
@@ -115,11 +130,17 @@ end
 
 function playstate:setupHud()
 	local pad = 2
-	local p1Portrait = UIImage(assets.playerPortrait[1], pad, pad, 2)
-	local p2Portrait = UIImage(assets.playerPortrait[2], push:getWidth() - assets.playerPortrait[2]:getWidth() * 2 - pad, pad, 2)
+	local p1Portrait = UIImage(assets.hud1, pad, pad)
+	local p2Portrait = UIImage(assets.hud2, push:getWidth() - assets.hud2:getWidth() - pad, pad)
+
+	scoreUI[1] = UIText("0", 80, 12, 70, "center", nil, assets.font_sm)
+	scoreUI[2] = UIText("0", 445, 12, 70, "center", nil, assets.font_sm)
 
 	world:add(p1Portrait)
 	world:add(p2Portrait)
+
+	world:add(scoreUI[1])
+	world:add(scoreUI[2])
 end
 
 function playstate:setupReadyFight()
@@ -128,15 +149,17 @@ function playstate:setupReadyFight()
 
 	world:add(readyText)
 
-	flux.to(readyText.pos, 1, {y = push:getHeight()/2 - 20}):ease("expoout"):oncomplete(function()
-		world:remove(readyText)
+	flux.to(readyText.pos, 1, {y = push:getHeight()/2 - 20}):ease("expoinout"):oncomplete(function()
+		timer.after(0.5, function()
+			world:remove(readyText)
 
-		world:add(fightText)
-		screen:setShake(10)
-		screen:setRotation(0.1)
-		timer.after(0.6, function()
-			reg.startPlay = true
-			world:remove(fightText)
+			world:add(fightText)
+			screen:setShake(10)
+			screen:setRotation(0.1)
+			timer.after(0.6, function()
+				reg.startPlay = true
+				world:remove(fightText)
+			end)
 		end)
 	end)
 end
@@ -191,18 +214,18 @@ function playstate:draw()
 			c:draw()
 		end
 	end
-
 	push:apply("end")
 
-	love.graphics.setColor(0,0,0)
-	-- love.graphics.print("Playstate.lua\nFPS: " .. love.timer.getFPS() .. "\nEntities: " .. world:getEntityCount(), 20, 20)
-	-- love.graphics.print("PLAYER 1: " .. scores[1], 20, 100)
-	-- love.graphics.print("PLAYER 2: " .. scores[2], 20, 120)
+	love.graphics.setColor(71,125,196)
+	love.graphics.rectangle("fill", -100, push:getHeight() * 2 - 15, push:getWidth() * 4, 200)
 	love.graphics.setColor(255,255,255,255)
 end
 
 function playstate:playerScored(playerNum) -- player num of scorer
 	scores[playerNum] = scores[playerNum] + 1
+	scoreUI[playerNum].text = scores[playerNum]
+
+	print(scores[1], scores[2])
 
 	if scores[playerNum] >= reg.MAX_SCORE then
 		self:gameOver()
@@ -226,7 +249,12 @@ function playstate:showGameOverHud()
 	local gameOverText = UIImage(assets.gameOver, "center", push:getHeight()/2 - 50)
 	world:add(gameOverText)
 
-	local winner = 2
+
+	local winner = 1
+
+	if scores[2] > scores[1] then
+		winner = 2
+	end
 
 	timer.after(1, function()
 		local playerWins = UIImage(assets.playerWin[winner], "center", push:getHeight()/2 + 10)
@@ -249,11 +277,57 @@ function playstate:joystickaxis(j, axis, value)
 	end
 end
 
-function playstate:gamepadpressed(j, button)
-	if reg.gameOver or not reg.startPlay then return end
+function playstate:keypressed(k)
+	if not reg.gameOver then
+		if not reg.startPlay then return end 
+		
+		if k == reg.controls[1].jump then
+			players[1]:jump()
+		elseif k == reg.controls[1].attack then
+			players[1]:attack()
+		elseif k == reg.controls[1].roll then
+			players[1]:roll()
+		elseif k == reg.controls[2].jump then
+			players[2]:jump()
+		elseif k == reg.controls[2].attack then
+			players[2]:attack()
+		elseif k == reg.controls[2].roll then
+			players[2]:roll()
+		end
+	else
+		if k == 'return' or k == 'space' then
+			Gamestate.switch(MenuState)
+		end
 
+		if k == 'r' then
+			Gamestate.switch(PlayState)
+		end
+	end
+
+	if k == 'escape' then
+		Gamestate.switch(MenuState)
+	end
+
+	-- toggle draw collisions
+	if k == '`' then
+		reg.DEBUG_COLLISIONS = not reg.DEBUG_COLLISIONS
+	end
+end
+
+function playstate:gamepadpressed(j, button)
 	local gamepadId, gamepadInstanceId = j:getID()
 
+	-- UI gameover
+	if reg.gameOver then
+		if button == 'a' or button == 'start' then
+			Gamestate.switch(MenuState)
+			return
+		end
+	end
+
+	if reg.gameOver or not reg.startPlay then return end
+
+	-- gameplay
 	if button == 'a' then
 		players[gamepadId].gamepadAxis.jump = true
 		players[gamepadId]:jump()

@@ -15,10 +15,17 @@ assets.playerPortrait = {}
 assets.playerPortrait[1] = love.graphics.newImage("assets/img/player_portrait1.png")
 assets.playerPortrait[2] = love.graphics.newImage("assets/img/player_portrait2.png")
 assets.white = love.graphics.newImage("assets/img/white.png")
-assets.grass = love.graphics.newImage("assets/img/tiles_spritesheet.png")
+assets.tiles = love.graphics.newImage("assets/img/tiles_spritesheet.png")
+
+assets.title = love.graphics.newImage("assets/img/title.png")
+assets.pressstart = love.graphics.newImage("assets/img/pressstart.png")
 
 assets.attack = love.graphics.newImage("assets/img/burst_spritesheet.png")
 assets.attackVert = love.graphics.newImage("assets/img/burst_spritesheet_vertical.png")
+
+-- hud
+assets.hud1 = love.graphics.newImage("assets/img/player1_hud.png")
+assets.hud2 = love.graphics.newImage("assets/img/player2_hud.png")
 
 -- text images
 assets.fight = love.graphics.newImage("assets/img/fight_text.png")
@@ -31,7 +38,8 @@ assets.playerWin[2] = love.graphics.newImage("assets/img/player2_wins.png")
 -- Fonts
 assets.font_lg = love.graphics.newFont("assets/fonts/04b03.ttf", 64)
 assets.font_md = love.graphics.newFont("assets/fonts/04b03.ttf", 48)
-assets.font_sm = love.graphics.newFont("assets/fonts/04b03.ttf", 24)
+assets.font_sm = love.graphics.newFont("assets/fonts/04b03.ttf", 32)
+assets.font_xs = love.graphics.newFont("assets/fonts/04b03.ttf", 24)
 
 -- Sfx
 -- assets.music = love.audio.newSource(love.sound.newDecoder("assets/sfx/music.mp3"))

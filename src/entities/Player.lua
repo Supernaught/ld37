@@ -121,15 +121,14 @@ end
 
 function Player:updateAnimations()
 	if not self.isAlive then
-		if self.movable.velocity.x > 0 then
-			self.flippedH = false
-		elseif self.movable.velocity.x < 0 then
-			self.flippedH = true
-		end
-
-		if math.abs(self.movable.velocity.y) < 0.5 then
+		if math.abs(self.movable.velocity.y) <= 0.5 then
 			self.animation = self.deadAnimation
 		else
+			if self.movable.velocity.x > 0 then
+				self.flippedH = true
+			elseif self.movable.velocity.x < 0 then
+				self.flippedH = false
+			end
 			self.animation = self.deadMidairAnimation
 		end
 		return

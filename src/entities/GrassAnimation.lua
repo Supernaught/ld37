@@ -13,7 +13,7 @@ function Grass:new(x, y, tileId)
 	self.isGrass = true
 
 	-- sprite/animation component
-	self.sprite = assets.grass
+	self.sprite = assets.tiles
 	local g = anim8.newGrid(reg.T_SIZE, reg.T_SIZE, self.sprite:getWidth(), self.sprite:getHeight())
 
 	row = 2
