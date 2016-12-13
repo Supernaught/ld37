@@ -143,8 +143,8 @@ end
 
 function playstate:keypressed(k)
 	if not reg.gameOver then
-		if not reg.startPlay then return end 
-		
+		if not reg.startPlay then return end
+
 		if k == reg.controls[1].jump then
 			players[1]:jump()
 		elseif k == reg.controls[1].attack then
@@ -236,7 +236,7 @@ function playstate:showGameOverHud()
 	end)
 end
 
-function playstate:joystickaxis(j, axis, value)	
+function playstate:joystickaxis(j, axis, value)
 	if reg.gameOver or not reg.startPlay then return end
 
 	local gamepadId, gamepadInstanceId = j:getID()
