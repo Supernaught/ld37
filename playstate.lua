@@ -31,6 +31,7 @@ HC = nil
 function playstate:enter()
 	timeScale = 1
 	reg.gameOver = false
+	reg.startPlay = false
 	timer.clear()
 
 	HC = HClib.new(150)
@@ -87,8 +88,8 @@ function playstate:enter()
 	leftWall.isSolid = true
 	rightWall = HC:rectangle(push:getWidth(), 0, reg.T_SIZE, push:getHeight())
 	rightWall.isSolid = true
-	topWall = HC:rectangle(0, -24, push:getWidth(), 24)
-	topWall.isSolid = true
+	-- topWall = HC:rectangle(0, -24, push:getWidth(), 24)
+	-- topWall.isSolid = true
 
 	-- add grass animations
 	for y,row in pairs(tileMap.map.layers['animations'].data) do
@@ -129,10 +130,12 @@ function playstate:setupReadyFight()
 
 	flux.to(readyText.pos, 1, {y = push:getHeight()/2 - 20}):ease("expoout"):oncomplete(function()
 		world:remove(readyText)
+
 		world:add(fightText)
 		screen:setShake(10)
 		screen:setRotation(0.1)
-		timer.after(0.7, function()
+		timer.after(0.6, function()
+			reg.startPlay = true
 			world:remove(fightText)
 		end)
 	end)
@@ -140,6 +143,8 @@ end
 
 function playstate:keypressed(k)
 	if not reg.gameOver then
+		if not reg.startPlay then return end 
+		
 		if k == reg.controls[1].jump then
 			players[1]:jump()
 		elseif k == reg.controls[1].attack then
@@ -231,8 +236,8 @@ function playstate:showGameOverHud()
 	end)
 end
 
-function playstate:joystickaxis(j, axis, value)
-	if reg.gameOver then return end
+function playstate:joystickaxis(j, axis, value)	
+	if reg.gameOver or not reg.startPlay then return end
 
 	local gamepadId, gamepadInstanceId = j:getID()
 	if axis == 1 then
@@ -245,7 +250,7 @@ function playstate:joystickaxis(j, axis, value)
 end
 
 function playstate:gamepadpressed(j, button)
-	if reg.gameOver then return end
+	if reg.gameOver or not reg.startPlay then return end
 
 	local gamepadId, gamepadInstanceId = j:getID()
 
@@ -259,7 +264,7 @@ function playstate:gamepadpressed(j, button)
 end
 
 function playstate:gamepadreleased(j, button)
-	if reg.gameOver then return end
+	if reg.gameOver or not reg.startPlay then return end
 
 	local gamepadId, gamepadInstanceId = j:getID()
 

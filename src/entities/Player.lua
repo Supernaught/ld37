@@ -32,6 +32,8 @@ function Player:new(x, y, playerNumber, isUsingGamepad)
 	self.idleAnimation = anim8.newAnimation(g('1-8',2), 0.1)
 	self.jumpAnimation = anim8.newAnimation(g('1-4',3), 0.08)
 	self.fallAnimation = anim8.newAnimation(g('5-8',3), 0.08)
+	self.deadAnimation = anim8.newAnimation(g('1-1',4), 1)
+	self.deadMidairAnimation = anim8.newAnimation(g('2-2',4), 1)
 	self.animation = self.fallAnimation
 
 	self:setupParticles()
@@ -118,6 +120,21 @@ function Player:draw()
 end
 
 function Player:updateAnimations()
+	if not self.isAlive then
+		if self.movable.velocity.x > 0 then
+			self.flippedH = false
+		elseif self.movable.velocity.x < 0 then
+			self.flippedH = true
+		end
+
+		if math.abs(self.movable.velocity.y) < 0.5 then
+			self.animation = self.deadAnimation
+		else
+			self.animation = self.deadMidairAnimation
+		end
+		return
+	end
+
 	if self.movable.acceleration.x > 0 then
 		self.flippedH = false
 	elseif self.movable.acceleration.x < 0 then
@@ -153,6 +170,10 @@ function Player:setupParticles()
 end
 
 function Player:moveControls()
+	if not reg.startPlay then
+		return
+	end
+
 	local left = self:keyIsDown('left')
 	local right = self:keyIsDown('right')
 	local jump = self:keyIsDown('jump')
