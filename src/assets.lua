@@ -48,6 +48,8 @@ assets.sfx = {}
 assets.sfx.jump = love.audio.newSource(love.sound.newDecoder("assets/sfx/woosh.wav"))
 assets.sfx.death = love.audio.newSource(love.sound.newDecoder("assets/sfx/explode.wav"))
 assets.sfx.ground = love.audio.newSource(love.sound.newDecoder("assets/sfx/ground.wav"))
+assets.sfx.dash = love.audio.newSource(love.sound.newDecoder("assets/sfx/dash.wav"))
+assets.sfx.dash2 = love.audio.newSource(love.sound.newDecoder("assets/sfx/dash2.wav"))
 assets.sfx.ground:setVolume(0.2)
 
 assets.sfx.hit1 = love.audio.newSource(love.sound.newDecoder("assets/sfx/hit.wav"))

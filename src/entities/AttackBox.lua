@@ -10,7 +10,7 @@ function AttackBox:new(x, y, playerOwner, direction, posFollow)
 
 	boxSize = {w = boxLength, h = boxWidth}
 
-	atkDistance = reg.T_SIZE * 1.5
+	atkDistance = reg.T_SIZE * 1.2
 
 	if direction == 'down' then
 		y = y + atkDistance

@@ -334,6 +334,8 @@ function Player:roll()
 		timer.after(0.1, function()
 			self:stopRoll()
 		end)
+
+		assets.sfx.dash2:clone():play()
 	end
 end
 
@@ -417,6 +419,7 @@ function Player:attack()
 		atkDirection = 'right'
 	end
 
+	assets.sfx.dash:clone():play()
 	self.isAttackPaused = true
 	self:stopRoll()
 

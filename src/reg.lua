@@ -6,7 +6,7 @@ reg.gameOver = false
 reg.MAX_SCORE = 100
 
 -- game duration in sec
-reg.GAME_DURATION = 60
+reg.GAME_DURATION = 90
 reg.gameTime = reg.GAME_DURATION
 
 -- reg.T_SIZE = 16
